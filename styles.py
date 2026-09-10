@@ -285,12 +285,8 @@ PLOTLY_LAYOUT = {
     'colorway': COLOR_PALETTE,
     'legend': {
         'font': {'color': BRAND_PURPLE_DARK, 'size': 12}
-    },
-    'xaxis': {
-        'tickfont': {'color': BRAND_PURPLE_DARK},
-        'title': {'font': {'color': BRAND_PURPLE_DARK}}
-    },
-    'yaxis': {
+        },
+'xaxis': {
         'tickfont': {'color': BRAND_PURPLE_DARK},
         'title': {'font': {'color': BRAND_PURPLE_DARK}}
     }
