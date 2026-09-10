@@ -293,10 +293,9 @@ with tabs[0]:
     )
     fig_v5.update_traces(textposition='outside')
     fig_v5.update_layout(**PLOTLY_LAYOUT)
-fig_v5.update_yaxes(autorange='reversed')
+    fig_v5.update_yaxes(autorange='reversed')
     st.plotly_chart(fig_v5, use_container_width=True)
-    st.caption("ℹ️ Em um mesmo caso pode haver mais de um tipo de violência relatado simultaneamente — por isso a soma dos casos pode ser maior que o total de formulários.")
-
+    st.caption("ℹ️ Em um mesmo caso pode haver mais de um tipo de violência relatado simultaneamente – por isso a soma dos casos pode ser maior que o total de formulários.")
 # ==========================================
 # ABA 2: ATENDIMENTOS DA EQUIPE
 # ==========================================
