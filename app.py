@@ -423,9 +423,10 @@ with tabs[2]:
                 title="📑 Petições por Categoria Processual",
                 color='Total', color_continuous_scale='Reds'
             )
-            fig_pt_cat.update_traces(textposition='outside')
-            fig_pt_cat.update_layout(yaxis={'autorange': 'reversed'}, **PLOTLY_LAYOUT)
-            st.plotly_chart(fig_pt_cat, use_container_width=True)
+        fig_pt_cat.update_traces(textposition='outside')
+        fig_pt_cat.update_layout(**PLOTLY_LAYOUT)
+        fig_pt_cat.update_yaxes(autorange='reversed')
+        st.plotly_chart(fig_pt_cat, use_container_width=True)
             
         with c_pt2:
             fig_pt_pie = px.pie(
