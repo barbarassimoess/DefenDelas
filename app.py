@@ -235,7 +235,8 @@ with tabs[0]:
         st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">⚖️ Petições Judiciais CEDEM</div><div class="kpi-value">{total_peticoes}</div><div class="kpi-subtitle">Peças processuais protocoladas</div></div>""", unsafe_allow_html=True)
 
     with col4:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid #8B7BB8;"><div class="kpi-title">📍 Cidades Alcançadas</div><div class="kpi-value">{cidades_unicas}</div><div class="kpi-subtitle">Municípios de SC atendidos</div></div>""", unsafe_allow_html=True)    st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid #8B7BB8;"><div class="kpi-title">📍 Cidades Alcançadas</div><div class="kpi-value">{cidades_unicas}</div><div class="kpi-subtitle">Municípios de SC atendidos</div></div>""", unsafe_allow_html=True)    
+        st.markdown("<br>", unsafe_allow_html=True)
 
 # Gráfico de Evolução Mensal Integrada (Formulários x Atendimentos x Petições)
     st.markdown("#### 📈 Evolução Mensal Integrada das Demandas (2026)")
