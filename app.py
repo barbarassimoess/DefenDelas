@@ -269,15 +269,14 @@ with tabs[0]:
         marker_color=BRAND_PEACH_DEEP, text=df_integ['Petições'], textposition='outside'
     ))
     
-    fig_integ.update_layout(
-        barmode='group',
-        title="Volume Comparativo Mensal de Atuação",
-        xaxis_title="Mês",
-        yaxis_title="Total de Registros",
-        **PLOTLY_LAYOUT
-    )
-    st.plotly_chart(fig_integ, use_container_width=True)
-
+ fig_integ.update_layout(**PLOTLY_LAYOUT)
+fig_integ.update_layout(
+    barmode='group',
+    title="Volume Comparativo Mensal de Atuação",
+    xaxis_title="Mês",
+    yaxis_title="Total de Registros"
+)
+st.plotly_chart(fig_integ, use_container_width=True)
     # Destaque: Panorama dos 5 Tipos de Violência
     st.markdown("#### ⚖️ Panorama dos 5 Tipos de Violência (Lei Maria da Penha)")
     viol_5_counts = {
@@ -293,7 +292,8 @@ with tabs[0]:
         color='Casos', color_continuous_scale='Purples'
     )
     fig_v5.update_traces(textposition='outside')
-    fig_v5.update_layout(yaxis={'autorange': 'reversed'}, **PLOTLY_LAYOUT)
+    fig_v5.update_layout(**PLOTLY_LAYOUT)
+fig_v5.update_yaxes(autorange='reversed')
     st.plotly_chart(fig_v5, use_container_width=True)
     st.caption("ℹ️ Em um mesmo caso pode haver mais de um tipo de violência relatado simultaneamente — por isso a soma dos casos pode ser maior que o total de formulários.")
 
