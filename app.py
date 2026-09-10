@@ -223,7 +223,7 @@ with tabs[0]:
     cidades_unicas = df['municipio'].nunique() if not df.empty else 0
     
    # Linha 1 de KPIs Principais Integrados
-   col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
     st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">📑 Formulários de Acolhimento</div><div class="kpi-value">{total_formularios}</div><div class="kpi-subtitle">Solicitações online recebidas</div></div>""", unsafe_allow_html=True)
