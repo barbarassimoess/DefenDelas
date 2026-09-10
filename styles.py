@@ -283,4 +283,15 @@ PLOTLY_LAYOUT = {
     'margin': {'l': 30, 'r': 30, 't': 40, 'b': 30},
     'hovermode': 'closest',
     'colorway': COLOR_PALETTE,
+    'legend': {
+        'font': {'color': BRAND_PURPLE_DARK, 'size': 12}
+    },
+    'xaxis': {
+        'tickfont': {'color': BRAND_PURPLE_DARK},
+        'title': {'font': {'color': BRAND_PURPLE_DARK}}
+    },
+    'yaxis': {
+        'tickfont': {'color': BRAND_PURPLE_DARK},
+        'title': {'font': {'color': BRAND_PURPLE_DARK}}
+    }
 }
