@@ -222,25 +222,25 @@ with tabs[0]:
     total_peticoes = len(df_pet)
     cidades_unicas = df['municipio'].nunique() if not df.empty else 0
     
-    # Linha 1 de KPIs Principais Integrados
-    # Linha 1 de KPIs Principais Integrados (Responsivo)
-kpi_cols = st.columns([1, 1, 1, 1], gap="small")
+   col1, col2, col3, col4 = st.columns(4)
 
-with kpi_cols[0]:
+with col1:
     st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">📑 Formulários de Acolhimento</div><div class="kpi-value">{total_formularios}</div><div class="kpi-subtitle">Solicitações online recebidas</div></div>""", unsafe_allow_html=True)
 
-with kpi_cols[1]:
+with col2:
     st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">📞 Atendimentos Realizados</div><div class="kpi-value">{total_atendimentos}</div><div class="kpi-subtitle">Atuações e contatos da equipe</div></div>""", unsafe_allow_html=True)
 
-with kpi_cols[2]:
+with col3:
     st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">⚖️ Petições Judiciais CEDEM</div><div class="kpi-value">{total_peticoes}</div><div class="kpi-subtitle">Peças processuais protocoladas</div></div>""", unsafe_allow_html=True)
 
-with kpi_cols[3]:
+with col4:
     st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid #8B7BB8;"><div class="kpi-title">📍 Cidades Alcançadas</div><div class="kpi-value">{cidades_unicas}</div><div class="kpi-subtitle">Municípios de SC atendidos</div></div>""", unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
 
-    # Gráfico de Evolução Mensal Integrada (Formulários x Atendimentos x Petições)
-    st.markdown("#### 📈 Evolução Mensal Integrada das Demandas (2026)")
+# ATENÇÃO: Sem recuo/espaço no início desta linha para "sair" das colunas
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Gráfico de Evolução Mensal Integrada (Formulários x Atendimentos x Petições)
+st.markdown("#### 📈 Evolução Mensal Integrada das Demandas (2026)")
     
     months_series = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08']
     
