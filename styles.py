@@ -221,6 +221,29 @@ CUSTOM_CSS = f"""
     [data-testid="stToggle"] [role="checkbox"][aria-checked="true"] {{
         background-color: {BRAND_GREEN} !important;
     }}
+/* Responsivo para Celular */
+    @media (max-width: 768px) {{
+        [data-testid="column"] {{
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+            margin-bottom: 10px;
+        }}
+
+        .kpi-card {{
+            width: 100% !important;
+            box-sizing: border-box !important;
+            margin-bottom: 12px !important;
+        }}
+
+        .kpi-title {{
+            font-size: 13px !important;
+        }}
+
+        .kpi-value {{
+            font-size: 24px !important;
+   }}
+}}
 </style>
 """
 
@@ -260,31 +283,4 @@ PLOTLY_LAYOUT = {
     'margin': {'l': 30, 'r': 30, 't': 40, 'b': 30},
     'hovermode': 'closest',
     'colorway': COLOR_PALETTE,
-}
-/* --- AJUSTES PARA CELULAR E TELAS PEQUENAS --- */
-@media (max-width: 768px) {
-    /* Força as colunas do Streamlit a empilharem na vertical */
-    [data-testid="column"] {
-        width: 100% !important;
-        flex: 1 1 100% !important;
-        min-width: 100% !important;
-        margin-bottom: 10px;
-    }
-
-    /* Garante que o cartão ocupe 100% da largura da tela do celular */
-    .kpi-card {
-        width: 100% !important;
-        box-sizing: border-box !important;
-        margin-bottom: 12px !important;
-    }
-
-    /* Reduz levemente o tamanho do texto do título do cartão no celular para não quebrar */
-    .kpi-title {
-        font-size: 13px !important;
-    }
-
-    /* Ajusta o valor numérico do cartão */
-    .kpi-value {
-        font-size: 24px !important;
-    }
 }
