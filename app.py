@@ -269,14 +269,14 @@ with tabs[0]:
         marker_color=BRAND_PEACH_DEEP, text=df_integ['Petições'], textposition='outside'
     ))
     
- fig_integ.update_layout(**PLOTLY_LAYOUT)
-fig_integ.update_layout(
+    fig_integ.update_layout(**PLOTLY_LAYOUT)
+    fig_integ.update_layout(
     barmode='group',
     title="Volume Comparativo Mensal de Atuação",
     xaxis_title="Mês",
     yaxis_title="Total de Registros"
 )
-st.plotly_chart(fig_integ, use_container_width=True)
+    st.plotly_chart(fig_integ, use_container_width=True)
     # Destaque: Panorama dos 5 Tipos de Violência
     st.markdown("#### ⚖️ Panorama dos 5 Tipos de Violência (Lei Maria da Penha)")
     viol_5_counts = {
