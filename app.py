@@ -501,16 +501,15 @@ with tabs[3]:
         df_gen = df['identidade_genero'].value_counts().reset_index()
         df_gen.columns = ['Gênero', 'Total']
         if not df_gen.empty:
-            fig_gen = px.pie(df_gen, names='Gênero', values='Total', hole=0.4, title="⚧ Identidade de Gênero", color_discrete_sequence=COLOR_PALETTE)
-            fig_gen.update_traces(textinfo='percent+label', textposition='outside', insidetextorientation='horizontal')
-            fig_gen.update_layout(
-                **{**PLOTLY_LAYOUT, 'margin': {'l': 30, 'r': 30, 't': 60, 'b': 90}},
-                legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5, font=dict(size=12)),
-                uniformtext_minsize=11, uniformtext_mode='hide'
-            )
-            st.plotly_chart(fig_gen, use_container_width=True)
-
-        st.markdown("#### 🔄 Cruzamento Demográfico: Faixa Etária x Raça/Cor")
+            fig_gen = px.pie(df_gen, names='Gênero', values='Total', hole=0.4, title="⚧️ Identidade de Gênero", color_discrete_sequence=COLOR_PALETTE)
+        fig_gen.update_traces(textinfo='percent+label', textposition='outside', insidetextorientation='horizontal')
+        fig_gen.update_layout(**PLOTLY_LAYOUT)
+        fig_gen.update_layout(
+            margin={'l': 30, 'r': 30, 't': 60, 'b': 90},
+            legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5, font=dict(size=12)),
+            uniformtext_minsize=11, uniformtext_mode='hide'
+        )
+        st.plotly_chart(fig_gen, use_container_width=True)
         crosstab_raca_faixa = pd.crosstab(df['faixa_etaria'], df['raca_cor']).reindex(order_faixas).dropna(how='all')
         if not crosstab_raca_faixa.empty:
             fig_cross = px.bar(
