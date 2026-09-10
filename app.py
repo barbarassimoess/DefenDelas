@@ -273,7 +273,7 @@ with tabs[0]:
         yaxis_title="Total de Registros",
         **PLOTLY_LAYOUT
     )
-    st.plotly_chart(fig_integ, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
     # Destaque: Panorama dos 5 Tipos de Violência
     st.markdown("#### ⚖️ Panorama dos 5 Tipos de Violência (Lei Maria da Penha)")
