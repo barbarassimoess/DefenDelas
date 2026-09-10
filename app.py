@@ -68,7 +68,7 @@ df_pet_raw = raw_data.get('peticoes', pd.DataFrame())
 
 if df_forms_raw.empty and df_atend_raw.empty and df_pet_raw.empty:
     st.error("⚠️ Nenhuma planilha válida foi encontrada na pasta ou nos arquivos carregados.")
-    st.info("Coloque o arquivo `controle de dados dos formulários atualizado.xlsx` na pasta deste projeto ou faça upload pelo menu lateral.")
+    st.info("Coloque o arquivo `controle_dados.xlsx` na pasta deste projeto ou faça upload pelo menu lateral.")
     st.stop()
 
 # 3. Sidebar: Filtros Globais Dinâmicos
