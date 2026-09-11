@@ -16,7 +16,7 @@ import io
 from data_loader import load_all_dashboard_data
 from styles import (
     CUSTOM_CSS, COLOR_PALETTE, PLOTLY_LAYOUT, PURPLE_SCALE, GREEN_SCALE,
-    BRAND_PURPLE, BRAND_GREEN, BRAND_PEACH_DEEP
+    BRAND_PURPLE, BRAND_GREEN, BRAND_PEACH_DEEP, BRAND_PURPLE_DARK
 )
 
 # 1. Configuração da Página
