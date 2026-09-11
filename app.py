@@ -535,16 +535,13 @@ with tabs[3]:
                 fig_civil.update_layout(margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_civil, use_container_width=True)
             
-        with col_demo5:
         df_area = df['tipo_area'].value_counts().reset_index()
-        df_area.columns = ['Tipo de Área', 'Total']
-        if not df_area.empty:
-            fig_area = px.pie(df_area, names='Tipo de Área', values='Total', hole=0.4, title="🏡 Tipo de área (urbana / rural)", color_discrete_sequence=[BRAND_PURPLE, BRAND_GREEN, "#A8A0C4"])
-            fig_area.update_traces(textinfo='percent+label')
-            fig_area.update_layout(margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_area, use_container_width=True)
-
-    # Identidade de Gênero em linha própria, com largura total e legenda
+    df_area.columns = ['Tipo de Área', 'Total']
+    if not df_area.empty:
+        fig_area = px.pie(df_area, names='Tipo de Área', values='Total', hole=0.4, title="🏡 Tipo de área (urbana / rural)", color_discrete_sequence=[BRAND_PURPLE, BRAND_GREEN, "#A8A0C4"])
+        fig_area.update_traces(textinfo='percent+label')
+        fig_area.update_layout(margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_area, use_container_width=True)
     # horizontal abaixo do gráfico para que os percentuais não fiquem cortados
     df_gen = df['identidade_genero'].value_counts().reset_index()
     df_gen.columns = ['Gênero', 'Total']
