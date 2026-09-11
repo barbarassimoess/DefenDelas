@@ -686,23 +686,21 @@ def categorize_atendimento_modalidade(val):
     if not val or pd.isna(val):
         return 'Outros'
     s = str(val).lower()
-    if 'telefone' in s:
-        return 'Atendimento Telefônico'
+    if 'telefone' in s or 'whatsapp' in s:
+        return 'Telefone (mensagem)'
     if 'vídeo' in s or 'video' in s:
-        return 'Atendimento por Vídeo'
-    if 'whatsapp' in s:
-        return 'WhatsApp'
+        return 'Atendimento por vídeo'
     if 'e-mail' in s or 'email' in s:
         return 'E-mail'
     if 'presencial' in s:
-        return 'Atendimento Presencial'
+        return 'Atendimento presencial'
     if 'encaminhamento' in s:
-        return 'Encaminhamento Formal'
+        return 'Encaminhamento formal'
     if 'petição' in s or 'peticao' in s or 'mpu' in s:
-        return 'Petição / Demanda Jurídica'
+        return 'Petição / demanda jurídica'
     if 'contato' in s or 'conversa' in s or 'reunião' in s or 'reuniao' in s:
-        return 'Articulação de Rede / Órgãos'
-    return 'Atendimento Geral'
+        return 'Articulação de rede / órgãos'
+    return 'Atendimento geral'
 
 def load_atendimentos_from_excel(file_source, filename='Planilha'):
     try:
@@ -736,6 +734,13 @@ def load_atendimentos_from_excel(file_source, filename='Planilha'):
         df['ano'] = df['data'].dt.year
         df['mes'] = df['data'].dt.month
         df['mes_ano'] = df['data'].dt.strftime('%Y-%m')
+        meses_rotulo_map = {
+            '2026-01': 'Jan/2026', '2026-02': 'Fev/2026', '2026-03': 'Mar/2026',
+            '2026-04': 'Abr/2026', '2026-05': 'Mai/2026', '2026-06': 'Jun/2026',
+            '2026-07': 'Jul/2026', '2026-08': 'Ago/2026', '2026-09': 'Set/2026',
+            '2026-10': 'Out/2026', '2026-11': 'Nov/2026', '2026-12': 'Dez/2026'
+        }
+        df['mes_rotulo'] = df['mes_ano'].map(meses_rotulo_map).fillna(df['mes_ano'])
         
         dias_map = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'}
         df['dia_semana'] = df['data'].dt.dayofweek.map(dias_map)
