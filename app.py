@@ -377,14 +377,6 @@ with tabs[1]:
         fig_at_time = px.bar(
             df_at_modalidade,
             x='mes_rotulo',
-            y='Atendimentos',
-            color='modalidade_destaque',
-            barmode=bmode,
-            text='Atendimentos',
-            category_orders={
-                'mes_rotulo': ordem_meses_visiveis,
-                'modalidade_destaque': ['Telefone (mensagem)', 'Atendimento por vídeo', 'Articulação de rede / outros']
-            },
             color_discrete_map=cores_modalidades,
             labels={'mes_rotulo': 'Mês', 'modalidade_destaque': 'Modalidade', 'Atendimentos': 'Total de atendimentos'}
         )
@@ -392,7 +384,9 @@ with tabs[1]:
         fig_at_time.update_layout(
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
             xaxis={'type': 'category'},
-            **PLOTLY_LAYOUT
+            margin=dict(l=20, r=20, t=30, b=20),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)"
         )
         st.plotly_chart(fig_at_time, use_container_width=True)
 
@@ -407,7 +401,12 @@ with tabs[1]:
                 color='Atendimentos', color_continuous_scale=PURPLE_SCALE
             )
             fig_resp.update_traces(textposition='outside')
-            fig_resp.update_layout(yaxis={'autorange': 'reversed'}, **PLOTLY_LAYOUT)
+            fig_resp.update_layout(
+                yaxis={'autorange': 'reversed'},
+                margin=dict(l=20, r=20, t=30, b=20),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)"
+            )
             st.plotly_chart(fig_resp, use_container_width=True)
 
         with col_at_sub2:
