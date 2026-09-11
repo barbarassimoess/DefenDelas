@@ -393,7 +393,6 @@ with tabs[1]:
         # Gráficos Complementares: Responsáveis e Dia da Semana
         col_at_sub1, col_at_sub2 = st.columns(2)
         with col_at_sub1:
-            st.markdown("#### 👥 Atendimentos por responsável da equipe")
             df_resp = df_atend['responsavel'].value_counts().reset_index()
             df_resp.columns = ['Responsável', 'Atendimentos']
             fig_resp = px.bar(
