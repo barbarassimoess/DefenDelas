@@ -532,41 +532,42 @@ with tabs[3]:
             if not df_civil.empty:
                 fig_civil = px.bar(df_civil, x='Estado Civil', y='Total', text='Total', title="💍 Estado civil", color_discrete_sequence=[BRAND_PURPLE])
                 fig_civil.update_traces(textposition='outside')
-                fig_civil.update_layout(**PLOTLY_LAYOUT)
+                fig_civil.update_layout(margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_civil, use_container_width=True)
             
         with col_demo5:
-            df_area = df['tipo_area'].value_counts().reset_index()
-            df_area.columns = ['Tipo de Área', 'Total']
-            if not df_area.empty:
-                fig_area = px.pie(df_area, names='Tipo de Área', values='Total', hole=0.4, title="🏡 Tipo de área (urbana / rural)", color_discrete_sequence=[BRAND_PURPLE, BRAND_GREEN, "#A8A0C4"])
-                fig_area.update_traces(textinfo='percent+label')
-                fig_area.update_layout(**PLOTLY_LAYOUT)
-                st.plotly_chart(fig_area, use_container_width=True)
+        df_area = df['tipo_area'].value_counts().reset_index()
+        df_area.columns = ['Tipo de Área', 'Total']
+        if not df_area.empty:
+            fig_area = px.pie(df_area, names='Tipo de Área', values='Total', hole=0.4, title="🏡 Tipo de área (urbana / rural)", color_discrete_sequence=[BRAND_PURPLE, BRAND_GREEN, "#A8A0C4"])
+            fig_area.update_traces(textinfo='percent+label')
+            fig_area.update_layout(margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+            st.plotly_chart(fig_area, use_container_width=True)
 
-        # Identidade de Gênero em linha própria, com largura total e legenda
-        # horizontal abaixo do gráfico para que os percentuais não fiquem cortados
-        df_gen = df['identidade_genero'].value_counts().reset_index()
-        df_gen.columns = ['Gênero', 'Total']
-        if not df_gen.empty:
-            fig_gen = px.pie(df_gen, names='Gênero', values='Total', hole=0.4, title="⚧ Identidade de gênero", color_discrete_sequence=COLOR_PALETTE)
-            fig_gen.update_traces(textinfo='percent+label', textposition='outside', insidetextorientation='horizontal')
-            fig_gen.update_layout(
-                **{**PLOTLY_LAYOUT, 'margin': {'l': 30, 'r': 30, 't': 60, 'b': 90}},
-                legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5, font=dict(size=12)),
-                uniformtext_minsize=11, uniformtext_mode='hide'
-            )
-            st.plotly_chart(fig_gen, use_container_width=True)
+    # Identidade de Gênero em linha própria, com largura total e legenda
+    # horizontal abaixo do gráfico para que os percentuais não fiquem cortados
+    df_gen = df['identidade_genero'].value_counts().reset_index()
+    df_gen.columns = ['Gênero', 'Total']
+    if not df_gen.empty:
+        fig_gen = px.pie(df_gen, names='Gênero', values='Total', hole=0.4, title="⚧ Identidade de gênero", color_discrete_sequence=COLOR_PALETTE)
+        fig_gen.update_traces(textinfo='percent+label', textposition='outside', insidetextorientation='horizontal')
+        fig_gen.update_layout(
+            margin=dict(l=30, r=30, t=60, b=90),
+            legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5, font=dict(size=12)),
+            uniformtext_minsize=11, uniformtext_mode='hide',
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
+        )
+        st.plotly_chart(fig_gen, use_container_width=True)
 
-        st.markdown("#### 🔄 Cruzamento demográfico: faixa etária x raça/cor")
-        crosstab_raca_faixa = pd.crosstab(df['faixa_etaria'], df['raca_cor']).reindex(order_faixas).dropna(how='all')
-        if not crosstab_raca_faixa.empty:
-            fig_cross = px.bar(
-                crosstab_raca_faixa, barmode='stack',
-                title="Distribuição de raça/cor por faixa etária",
-                color_discrete_sequence=COLOR_PALETTE
-            )
-            fig_cross.update_layout(**PLOTLY_LAYOUT)
+    st.markdown("#### 🔀 Cruzamento demográfico: faixa etária x raça/cor")
+    crosstab_raca_faixa = pd.crosstab(df['faixa_etaria'], df['raca_cor']).reindex(order_faixas).dropna(how='all')
+    if not crosstab_raca_faixa.empty:
+        fig_cross = px.bar(
+            crosstab_raca_faixa, barmode='stack',
+            title="Distribuição de raça/cor por faixa etária",
+            color_discrete_sequence=COLOR_PALETTE
+        )
+        fig_cross.update_layout(margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_cross, use_container_width=True)
     else:
         st.info("Nenhum dado sociodemográfico encontrado para os filtros selecionados.")
