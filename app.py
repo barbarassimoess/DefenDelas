@@ -20,13 +20,13 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from data_loader import load_all_dashboard_data
-from styles import (
+import styles (
     BRAND_GREEN,
     BRAND_PEACH_DEEP,
     BRAND_PURPLE,
     BRAND_PURPLE_DARK,
     COLOR_PALETTE,
-    CUSTOM_CSS,
+    styles.CUSTOM_CSS,
     GREEN_SCALE,
     PLOTLY_LAYOUT,
     PURPLE_SCALE,
@@ -42,7 +42,7 @@ st.set_page_config(
 )
 
 # Aplicar CSS Customizado
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+st.markdown(styles.CUSTOM_CSS, unsafe_allow_html=True)
 
 # 2. Carregamento dos Dados com Cache
 @st.cache_data(show_spinner=False)
