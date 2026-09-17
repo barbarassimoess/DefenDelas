@@ -20,7 +20,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from data_loader import load_all_dashboard_data
-import styles (
+from styles import (
     BRAND_GREEN,
     BRAND_PEACH_DEEP,
     BRAND_PURPLE,
