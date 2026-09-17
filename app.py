@@ -5,19 +5,32 @@ Interface Gráfica Interativa com Streamlit e Plotly
 Monitoramento Integrado de Formulários, Atendimentos da Equipe e Petições Judiciais (CEDEM)
 """
 
-import streamlit as st
-import pandas as pd
+import os
+import sys
+
+# Garante que o Python encontre os módulos na pasta raiz
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+import io
+from datetime import datetime, timedelta
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import io
+import streamlit as st
 
 from data_loader import load_all_dashboard_data
 from styles import (
-    CUSTOM_CSS, COLOR_PALETTE, PLOTLY_LAYOUT, PURPLE_SCALE, GREEN_SCALE,
-    BRAND_PURPLE, BRAND_PURPLE_DARK, BRAND_GREEN, BRAND_PEACH_DEEP,
-    apply_chart_theme
+    BRAND_GREEN,
+    BRAND_PEACH_DEEP,
+    BRAND_PURPLE,
+    BRAND_PURPLE_DARK,
+    COLOR_PALETTE,
+    CUSTOM_CSS,
+    GREEN_SCALE,
+    PLOTLY_LAYOUT,
+    PURPLE_SCALE,
+    apply_chart_theme,
 )
 
 # 1. Configuração da Página
@@ -334,34 +347,61 @@ with tabs[1]:
         </div>
         """, unsafe_allow_html=True)
 
-        # Gráficos da Equipe: Responsáveis e Dia da Semana
-        col_at_sub1, col_at_sub2 = st.columns(2)
-        with col_at_sub1:
-            st.markdown("#### 👥 Atendimentos por responsável da equipe")
-            df_resp = df_atend['responsavel'].value_counts().reset_index()
-            df_resp.columns = ['Responsável', 'Atendimentos']
-            fig_resp = px.bar(
-                df_resp, x='Atendimentos', y='Responsável', orientation='h', text='Atendimentos',
-                color='Atendimentos', color_continuous_scale=PURPLE_SCALE
-            )
-            fig_resp.update_traces(textposition='outside', cliponaxis=False)
-            fig_resp.update_layout(yaxis={'autorange': 'reversed', 'automargin': True}, **PLOTLY_LAYOUT)
-            apply_chart_theme(fig_resp, left_margin=120)
-            st.plotly_chart(fig_resp, use_container_width=True)
+        # Gráfico: Dia da Semana (largura total)
+        st.markdown("#### 🗓️ Distribuição de atendimentos por dia da semana")
+        dias_ordem = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira']
+        df_at_dias = df_atend['dia_semana'].value_counts().reindex(dias_ordem).fillna(0).reset_index()
+        df_at_dias.columns = ['Dia da semana', 'Atendimentos']
+        fig_at_dia = px.bar(
+            df_at_dias, x='Dia da semana', y='Atendimentos', text='Atendimentos',
+            color='Atendimentos', color_continuous_scale=PURPLE_SCALE
+        )
+        fig_at_dia.update_traces(textposition='outside', cliponaxis=False)
+        fig_at_dia.update_layout(xaxis={'automargin': True}, **PLOTLY_LAYOUT)
+        apply_chart_theme(fig_at_dia, bottom_margin=50)
+        st.plotly_chart(fig_at_dia, use_container_width=True)
 
-        with col_at_sub2:
-            st.markdown("#### 🗓️ Distribuição de atendimentos por dia da semana")
-            dias_ordem = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira']
-            df_at_dias = df_atend['dia_semana'].value_counts().reindex(dias_ordem).fillna(0).reset_index()
-            df_at_dias.columns = ['Dia da semana', 'Atendimentos']
-            fig_at_dia = px.bar(
-                df_at_dias, x='Dia da semana', y='Atendimentos', text='Atendimentos',
-                color='Atendimentos', color_continuous_scale=PURPLE_SCALE
-            )
-            fig_at_dia.update_traces(textposition='outside', cliponaxis=False)
-            fig_at_dia.update_layout(xaxis={'automargin': True}, **PLOTLY_LAYOUT)
-            apply_chart_theme(fig_at_dia, bottom_margin=50)
-            st.plotly_chart(fig_at_dia, use_container_width=True)
+        # Gráficos individualizados: Telefone e Vídeo por mês
+        st.markdown("#### 📊 Volume mensal por modalidade de atendimento")
+        meses_ordem = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+        col_tel, col_vid = st.columns(2)
+
+        with col_tel:
+            st.markdown("##### 📞 Telefone (mensagem) — mensal")
+            df_tel = df_atend[df_atend['categoria_modalidade'] == 'Telefone (mensagem)']
+            df_tel_mes = df_tel['mes_nome'].value_counts().reindex(meses_ordem).dropna().reset_index()
+            df_tel_mes.columns = ['Mês', 'Atendimentos']
+            if not df_tel_mes.empty:
+                fig_tel = px.bar(
+                    df_tel_mes, x='Mês', y='Atendimentos', text='Atendimentos',
+                    color='Atendimentos', color_continuous_scale=PURPLE_SCALE
+                )
+                fig_tel.update_traces(textposition='outside', cliponaxis=False)
+                fig_tel.update_layout(xaxis={'automargin': True}, **PLOTLY_LAYOUT)
+                apply_chart_theme(fig_tel, bottom_margin=50)
+                st.plotly_chart(fig_tel, use_container_width=True)
+            else:
+                st.info("Sem dados de Telefone para o período.")
+
+        with col_vid:
+            st.markdown("##### 🎥 Atendimentos por vídeo — mensal")
+            df_vid = df_atend[df_atend['categoria_modalidade'] == 'Atendimento por vídeo']
+            df_vid_mes = df_vid['mes_nome'].value_counts().reindex(meses_ordem).dropna().reset_index()
+            df_vid_mes.columns = ['Mês', 'Atendimentos']
+            if not df_vid_mes.empty:
+                fig_vid = px.bar(
+                    df_vid_mes, x='Mês', y='Atendimentos', text='Atendimentos',
+                    color='Atendimentos', color_continuous_scale=GREEN_SCALE
+                )
+                fig_vid.update_traces(textposition='outside', cliponaxis=False)
+                fig_vid.update_layout(xaxis={'automargin': True}, **PLOTLY_LAYOUT)
+                apply_chart_theme(fig_vid, bottom_margin=50)
+                st.plotly_chart(fig_vid, use_container_width=True)
+            else:
+                st.info("Sem dados de Vídeo para o período.")
+
     else:
         st.info("Nenhum dado de atendimento encontrado para os filtros selecionados.")
 
@@ -747,7 +787,7 @@ with tabs[7]:
     
     base_selecionada = st.radio(
         "Selecione a base de dados para visualização e exportação:",
-        ["📨 Formulários de acolhimento", "📞 Atendimentos da equipe", "⚖️ Petições judiciais (CEDEM)"],
+        ["📨 Formulários de acolhimento", "📞 Atendimentos (telefone & vídeo)", "⚖️ Petições judiciais (CEDEM)"],
         horizontal=True
     )
     
@@ -775,13 +815,12 @@ with tabs[7]:
         sheet_name_exp = "Formularios"
         file_prefix = "formularios"
         
-    elif base_selecionada == "📞 Atendimentos da equipe":
-        cols_atend = ['data_apenas', 'dia_semana', 'categoria_modalidade', 'responsavel', 'mes_ano']
+    elif base_selecionada == "📞 Atendimentos (telefone & vídeo)":
+        cols_atend = ['data_apenas', 'dia_semana', 'categoria_modalidade', 'mes_ano']
         rename_atend = {
             'data_apenas': 'Data do Atendimento',
             'dia_semana': 'Dia da Semana',
             'categoria_modalidade': 'Modalidade',
-            'responsavel': 'Responsável',
             'mes_ano': 'Mês/Ano'
         }
         df_export = df_atend[cols_atend].rename(columns=rename_atend) if not df_atend.empty else pd.DataFrame()
