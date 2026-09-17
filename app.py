@@ -19,20 +19,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from data_loader import load_all_dashboard_data
 from styles import (
     BRAND_GREEN,
     BRAND_PEACH_DEEP,
     BRAND_PURPLE,
     BRAND_PURPLE_DARK,
     COLOR_PALETTE,
-    styles.CUSTOM_CSS,
+    CUSTOM_CSS,
     GREEN_SCALE,
     PLOTLY_LAYOUT,
     PURPLE_SCALE,
     apply_chart_theme,
 )
-
 # 1. Configuração da Página
 st.set_page_config(
     page_title="Painel de dados - DefenDelas",
@@ -42,7 +40,7 @@ st.set_page_config(
 )
 
 # Aplicar CSS Customizado
-st.markdown(styles.CUSTOM_CSS, unsafe_allow_html=True)
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # 2. Carregamento dos Dados com Cache
 @st.cache_data(show_spinner=False)
