@@ -351,19 +351,93 @@ def normalize_area(val):
         return 'Zona urbana'
     return 'Não informado'
 
-def normalize_agressor_profile(val):
+def extract_agressor_items(val):
     if pd.isna(val) or not str(val).strip():
-        return 'Não informado'
-    s = remove_accents(str(val))
-    if 'ex-' in s or 'ex ' in s or 'excompanheir' in s or 'exmarido' in s or 'exnamorad' in s:
-        return 'Ex-companheiro(a)'
-    if 'companheir' in s or 'marido' in s or 'namorad' in s or 'espos' in s or 'conjuge' in s:
-        return 'Companheiro(a) atual'
-    if 'filh' in s or 'mae' in s or 'pai' in s or 'net' in s or 'prim' in s or 'ti' in s or 'sogr' in s or 'parent' in s:
-        return 'Familiar (Filho, Mãe, etc.)'
-    if 'vizinh' in s or 'conhecid' in s or 'amig' in s:
-        return 'Conhecido(a) / Vizinho(a)'
-    return 'Outro / Não informado'
+        return ['Não informado / Encaminhamento externo']
+    s = remove_accents(str(val)).lower().strip()
+    if any(k in s for k in ['delegacia', 'site da defensoria', 'nan', 'none', 'nao informado', 'nao se aplica']):
+        return ['Não informado / Encaminhamento externo']
+        
+    items = []
+    
+    # Ex-companheiro(a)
+    if any(k in s for k in ['ex-companheir', 'ex companheir', 'excompanheir', 'ex-marid', 'exmarid', 'ex-namorad', 'exnamorad', 'ex-espos', 'ex-conjuge', 'ex-companhiro']):
+        items.append('Ex-companheiro(a)')
+    elif 'primo/ex-companheiro' in s or 'ex-companheiro de sua ex-companheira' in s:
+        items.append('Ex-companheiro(a)')
+        
+    # Companheiro(a) atual
+    if any(k in s for k in ['companheir', 'marido', 'namorad', 'espos', 'conjuge']) and 'ex' not in s:
+        items.append('Companheiro(a) atual')
+        
+    # Genitores / Pais
+    if 'genitora' in s or 'mae' in s:
+        items.append('Mãe')
+    if (re.search(r'\b(genitor|pai)\b', s) or 'genitor e genitora' in s or 'genitor/pai' in s) and 'genitora/mae' not in s:
+        items.append('Pai')
+    if 'padrasto' in s:
+        items.append('Padrasto')
+        
+    # Filhos
+    if 'filha' in s:
+        items.append('Filha')
+    elif 'filh' in s:
+        items.append('Filho')
+        
+    # Nora e Genro
+    if 'nora' in s:
+        items.append('Nora')
+    if 'genro' in s:
+        items.append('Genro')
+        
+    # Irmãos e Sobrinhos
+    if 'irma' in s:
+        items.append('Irmã')
+    if 'irmao' in s:
+        items.append('Irmão')
+    if 'sobrinh' in s:
+        items.append('Sobrinho')
+        
+    # Primos
+    if 'prima' in s:
+        items.append('Prima')
+    elif 'prim' in s and 'ex-companheiro' not in s:
+        items.append('Primo')
+        
+    # Sogro(a)
+    if 'ex-sogr' in s or 'sogr' in s:
+        items.append('Sogro(a) / Ex-sogro(a)')
+        
+    # Cunhados
+    if 'cunhada' in s:
+        items.append('Cunhada')
+    elif 'cunhad' in s:
+        items.append('Cunhado')
+        
+    # Neto e Tio
+    if 'net' in s:
+        items.append('Neto')
+    if 'ti' in s:
+        items.append('Tio')
+        
+    # Outros
+    if 'amig' in s or 'ex-amig' in s:
+        items.append('Amigo(a)')
+    if 'colega' in s:
+        items.append('Outros familiares / parentes')
+    if 'vizinh' in s:
+        items.append('Vizinho(a)')
+    if 'parent' in s:
+        items.append('Outros familiares / parentes')
+        
+    if not items:
+        items.append('Outros vínculos')
+        
+    return items
+
+def normalize_agressor_profile(val):
+    items = extract_agressor_items(val)
+    return ', '.join(items) if items else 'Não informado / Encaminhamento externo'
 
 def extract_violence_types(text):
     """
@@ -650,6 +724,7 @@ def enrich_dataframe(df):
     df['estado_civil'] = df['estado_civil'].apply(normalize_marital_status)
     df['tipo_area'] = df['tipo_area'].apply(normalize_area)
     df['perfil_agressor_rotulo'] = df['perfil_agressor'].apply(normalize_agressor_profile)
+    df['perfil_agressor_lista'] = df['perfil_agressor'].apply(extract_agressor_items)
     df['canal_origem'] = df['como_conheceu'].apply(extract_referral_channel)
     
     coords_regions = [get_city_coords_and_region(m) for m in df['municipio']]
