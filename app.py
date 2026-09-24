@@ -19,18 +19,34 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from styles import (
-    BRAND_GREEN,
-    BRAND_PEACH_DEEP,
-    BRAND_PURPLE,
-    BRAND_PURPLE_DARK,
-    COLOR_PALETTE,
-    CUSTOM_CSS,
-    GREEN_SCALE,
-    PLOTLY_LAYOUT,
-    PURPLE_SCALE,
-    apply_chart_theme,
-)
+from data_loader import load_all_dashboard_data
+
+# Importa os estilos garantindo o funcionamento do caminho
+try:
+    from styles import (
+        BRAND_GREEN,
+        BRAND_PEACH_DEEP,
+        BRAND_PURPLE,
+        BRAND_PURPLE_DARK,
+        COLOR_PALETTE,
+        CUSTOM_CSS,
+        GREEN_SCALE,
+        PLOTLY_LAYOUT,
+        PURPLE_SCALE,
+        apply_chart_theme,
+    )
+except ImportError:
+    import styles
+    BRAND_GREEN = styles.BRAND_GREEN
+    BRAND_PEACH_DEEP = styles.BRAND_PEACH_DEEP
+    BRAND_PURPLE = styles.BRAND_PURPLE
+    BRAND_PURPLE_DARK = styles.BRAND_PURPLE_DARK
+    COLOR_PALETTE = styles.COLOR_PALETTE
+    CUSTOM_CSS = styles.CUSTOM_CSS
+    GREEN_SCALE = styles.GREEN_SCALE
+    PLOTLY_LAYOUT = styles.PLOTLY_LAYOUT
+    PURPLE_SCALE = styles.PURPLE_SCALE
+    apply_chart_theme = styles.apply_chart_theme
 # 1. Configuração da Página
 st.set_page_config(
     page_title="Painel de dados - DefenDelas",
@@ -367,39 +383,60 @@ with tabs[1]:
         col_tel, col_vid = st.columns(2)
 
         with col_tel:
-            st.markdown("##### 📞 Telefone (mensagem) — mensal")
+            st.markdown("##### 📞 Telefone (mensagem) – mensal")
+            
             df_tel = df_atend[df_atend['categoria_modalidade'] == 'Telefone (mensagem)']
+            
+            # Trava de segurança para a coluna mes_nome
+            if 'mes_nome' not in df_tel.columns:
+                cols_data = [c for c in df_tel.columns if 'data' in c.lower()]
+                if cols_data:
+                    df_tel['mes_nome'] = pd.to_datetime(df_tel[cols_data[0]], errors='coerce').dt.strftime('%B')
+                else:
+                    df_tel['mes_nome'] = 'Indefinido'
+
             df_tel_mes = df_tel['mes_nome'].value_counts().reindex(meses_ordem).dropna().reset_index()
             df_tel_mes.columns = ['Mês', 'Atendimentos']
+            
             if not df_tel_mes.empty:
                 fig_tel = px.bar(
                     df_tel_mes, x='Mês', y='Atendimentos', text='Atendimentos',
                     color='Atendimentos', color_continuous_scale=PURPLE_SCALE
                 )
                 fig_tel.update_traces(textposition='outside', cliponaxis=False)
-                fig_tel.update_layout(xaxis={'automargin': True}, **PLOTLY_LAYOUT)
+                fig_tel.update_layout(xaxis={'autorange': True}, **PLOTLY_LAYOUT)
                 apply_chart_theme(fig_tel, bottom_margin=50)
                 st.plotly_chart(fig_tel, use_container_width=True)
             else:
                 st.info("Sem dados de Telefone para o período.")
 
         with col_vid:
-            st.markdown("##### 🎥 Atendimentos por vídeo — mensal")
+            st.markdown("##### 📹 Atendimentos por vídeo – mensal")
+            
             df_vid = df_atend[df_atend['categoria_modalidade'] == 'Atendimento por vídeo']
+            
+            # Trava de segurança para a coluna mes_nome
+            if 'mes_nome' not in df_vid.columns:
+                cols_data = [c for c in df_vid.columns if 'data' in c.lower()]
+                if cols_data:
+                    df_vid['mes_nome'] = pd.to_datetime(df_vid[cols_data[0]], errors='coerce').dt.strftime('%B')
+                else:
+                    df_vid['mes_nome'] = 'Indefinido'
+
             df_vid_mes = df_vid['mes_nome'].value_counts().reindex(meses_ordem).dropna().reset_index()
             df_vid_mes.columns = ['Mês', 'Atendimentos']
+            
             if not df_vid_mes.empty:
                 fig_vid = px.bar(
                     df_vid_mes, x='Mês', y='Atendimentos', text='Atendimentos',
                     color='Atendimentos', color_continuous_scale=GREEN_SCALE
                 )
                 fig_vid.update_traces(textposition='outside', cliponaxis=False)
-                fig_vid.update_layout(xaxis={'automargin': True}, **PLOTLY_LAYOUT)
+                fig_vid.update_layout(xaxis={'autorange': True}, **PLOTLY_LAYOUT)
                 apply_chart_theme(fig_vid, bottom_margin=50)
                 st.plotly_chart(fig_vid, use_container_width=True)
             else:
                 st.info("Sem dados de Vídeo para o período.")
-
     else:
         st.info("Nenhum dado de atendimento encontrado para os filtros selecionados.")
 
