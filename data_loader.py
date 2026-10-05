@@ -15,8 +15,8 @@ import numpy as np
 from datetime import datetime
 
 # Data de corte do painel: nenhum registro após esta data deve ser exibido
-# (o painel deve considerar apenas atendimentos/formulários até 31/08/2026)
-DATA_CUTOFF = pd.Timestamp('2026-08-31 23:59:59')
+# (o painel considera atendimentos/formulários até 30/09/2026)
+DATA_CUTOFF = pd.Timestamp('2026-09-30 23:59:59')
 
 # Coordenadas e Regiões de Municípios de Santa Catarina e Principais Cidades
 CITIES_DB = {
@@ -31,6 +31,8 @@ CITIES_DB = {
     'São João Batista': {'lat': -27.2761, 'lon': -48.8492, 'regiao': 'Grande Florianópolis'},
     'Antônio Carlos': {'lat': -27.5186, 'lon': -48.7694, 'regiao': 'Grande Florianópolis'},
     'Águas Mornas': {'lat': -27.6975, 'lon': -48.8242, 'regiao': 'Grande Florianópolis'},
+    'São Pedro de Alcântara': {'lat': -27.5672, 'lon': -48.8042, 'regiao': 'Grande Florianópolis'},
+    'Anitápolis': {'lat': -27.9042, 'lon': -49.1294, 'regiao': 'Grande Florianópolis'},
     
     'Joinville': {'lat': -26.3045, 'lon': -48.8487, 'regiao': 'Norte Catarinense'},
     'Jaraguá do Sul': {'lat': -26.4850, 'lon': -49.0800, 'regiao': 'Norte Catarinense'},
@@ -71,6 +73,8 @@ CITIES_DB = {
     'Agronômica': {'lat': -27.2658, 'lon': -49.7119, 'regiao': 'Vale do Itajaí'},
     'Aurora': {'lat': -27.3108, 'lon': -49.6331, 'regiao': 'Vale do Itajaí'},
     'Trombudo Central': {'lat': -27.2978, 'lon': -49.7919, 'regiao': 'Vale do Itajaí'},
+    'Luís Alves': {'lat': -26.7214, 'lon': -48.9328, 'regiao': 'Vale do Itajaí'},
+    'Imbuia': {'lat': -27.4914, 'lon': -49.7153, 'regiao': 'Vale do Itajaí'},
     
     'Criciúma': {'lat': -28.6775, 'lon': -49.3703, 'regiao': 'Sul Catarinense'},
     'Tubarão': {'lat': -28.4736, 'lon': -49.0072, 'regiao': 'Sul Catarinense'},
@@ -94,6 +98,7 @@ CITIES_DB = {
     'Gravatal': {'lat': -28.3242, 'lon': -49.0381, 'regiao': 'Sul Catarinense'},
     'Siderópolis': {'lat': -28.5981, 'lon': -49.4242, 'regiao': 'Sul Catarinense'},
     'Morro da Fumaça': {'lat': -28.6508, 'lon': -49.2131, 'regiao': 'Sul Catarinense'},
+    'Balneário Arroio do Silva': {'lat': -28.9839, 'lon': -49.4189, 'regiao': 'Sul Catarinense'},
     
     'Lages': {'lat': -27.8158, 'lon': -50.3261, 'regiao': 'Serrana'},
     'Curitibanos': {'lat': -27.2831, 'lon': -50.5842, 'regiao': 'Serrana'},
@@ -119,6 +124,10 @@ CITIES_DB = {
     'São Lourenço do Oeste': {'lat': -26.3592, 'lon': -52.8517, 'regiao': 'Oeste Catarinense'},
     'Guarujá do Sul': {'lat': -26.3853, 'lon': -53.5328, 'regiao': 'Oeste Catarinense'},
     'Romelândia': {'lat': -26.5058, 'lon': -53.3153, 'regiao': 'Oeste Catarinense'},
+    'Itapiranga': {'lat': -27.1689, 'lon': -53.7631, 'regiao': 'Oeste Catarinense'},
+    'Mondaí': {'lat': -27.1064, 'lon': -53.4008, 'regiao': 'Oeste Catarinense'},
+    'Quilombo': {'lat': -26.7289, 'lon': -52.7231, 'regiao': 'Oeste Catarinense'},
+    'Paraíso': {'lat': -26.6158, 'lon': -53.6706, 'regiao': 'Oeste Catarinense'},
     
     'Curitiba': {'lat': -25.4284, 'lon': -49.2733, 'regiao': 'Outro Estado (PR)'},
     'Campo Largo': {'lat': -25.4597, 'lon': -49.5275, 'regiao': 'Outro Estado (PR)'},
@@ -146,6 +155,9 @@ def normalize_city(raw_name):
     slug = remove_accents(s)
     slug = re.sub(r'[^a-z0-9\s]', '', slug).strip()
     
+    if slug in ['nao informado', 'nao especificado']:
+        return 'Não informado'
+    
     synonyms = {
         'florianopolis': 'Florianópolis',
         'florianoplis': 'Florianópolis',
@@ -166,10 +178,14 @@ def normalize_city(raw_name):
         'sao francisco do sul': 'São Francisco do Sul',
         'sao chico': 'São Francisco do Sul',
         'sao francisco': 'São Francisco do Sul',
+        'balneario arroio do silva': 'Balneário Arroio do Silva',
+        'arroio do silva': 'Balneário Arroio do Silva',
+        'balneario picarras': 'Balneário Piçarras',
+        'picarras': 'Balneário Piçarras',
         'balneario balance': 'Balneário Camboriú',
         'balneario camboriu': 'Balneário Camboriú',
-        'balneario': 'Balneário Camboriú',
         'bc': 'Balneário Camboriú',
+        'cam oriu': 'Camboriú',
         'camboriu': 'Camboriú',
         'navegantes': 'Navegantes',
         'ararangua': 'Araranguá',
@@ -178,6 +194,7 @@ def normalize_city(raw_name):
         'fraiburgo': 'Fraiburgo',
         'friburgo': 'Fraiburgo',
         'passo de torres': 'Passo de Torres',
+        'guabiruba sul': 'Guabiruba',
         'guabiruba': 'Guabiruba',
         'jaragua do sul': 'Jaraguá do Sul',
         'jaragua': 'Jaraguá do Sul',
@@ -185,6 +202,7 @@ def normalize_city(raw_name):
         'chapeco': 'Chapecó',
         'nova veneza': 'Nova Veneza',
         'itapema': 'Itapema',
+        'monte carlos': 'Monte Carlo',
         'monte carlo': 'Monte Carlo',
         'blumenau': 'Blumenau',
         'tubarao': 'Tubarão',
@@ -198,6 +216,9 @@ def normalize_city(raw_name):
         'porto belo': 'Porto Belo',
         'santo amaro da imperatriz': 'Santo Amaro da Imperatriz',
         'santo amaro': 'Santo Amaro da Imperatriz',
+        'sao pedro de alcantara': 'São Pedro de Alcântara',
+        'anitapolis': 'Anitápolis',
+        'luis alves': 'Luís Alves',
         'sao bento do sul': 'São Bento do Sul',
         'governador celso ramos': 'Governador Celso Ramos',
         'icara': 'Içara',
@@ -207,8 +228,6 @@ def normalize_city(raw_name):
         'curitibanos': 'Curitibanos',
         'sao joaquim': 'São Joaquim',
         'penha': 'Penha',
-        'picarras': 'Balneário Piçarras',
-        'balneario picarras': 'Balneário Piçarras',
         'rio do sul': 'Rio do Sul',
         'forquilhinha': 'Forquilhinha',
         'turvo': 'Turvo',
@@ -237,13 +256,18 @@ def normalize_city(raw_name):
         'trombudo central': 'Trombudo Central',
         'guaruja do sul': 'Guarujá do Sul',
         'romelandia': 'Romelândia',
+        'itapiranga': 'Itapiranga',
+        'mondai': 'Mondaí',
+        'quilombo': 'Quilombo',
+        'imbuia': 'Imbuia',
+        'paraiso': 'Paraíso',
         'curitiba': 'Curitiba',
         'campo largo': 'Campo Largo',
         'porto alegre': 'Porto Alegre',
         'sao paulo': 'São Paulo',
     }
     
-    for key, std_name in synonyms.items():
+    for key, std_name in sorted(synonyms.items(), key=lambda x: len(x[0]), reverse=True):
         if slug == key or slug.startswith(key + ' ') or slug.endswith(' ' + key):
             return std_name
             
@@ -308,18 +332,20 @@ def normalize_race(val):
 
 def normalize_gender(val):
     if pd.isna(val) or not str(val).strip():
-        return 'Não informado'
+        return 'Prefiro não informar / Não informado'
     s = str(val).strip()
     slug = remove_accents(s)
-    if 'cis' in slug or slug == 'mulher' or slug == 'feminino' or slug == 'mulher normal' or slug == 'mulher mesmo' or slug == 'mulher heterossexual':
-        return 'Mulher Cisgênero'
+    if 'cis' in slug:
+        return 'Mulher cisgênero'
     if 'trans' in slug or 'travesti' in slug:
-        return 'Mulher Trans / Travesti'
+        return 'Mulher trans / Transgênero / Travesti'
     if 'binari' in slug or 'nb' in slug:
-        return 'Não-binária'
-    if 'prefiro' in slug or 'nao' in slug or '?' in slug:
-        return 'Prefiro não informar'
-    return 'Outra'
+        return 'Pessoa Não-binária'
+    if any(k in slug for k in ['prefiro', 'nao informado', 'nao entendi', '?']):
+        return 'Prefiro não informar / Não informado'
+    if any(k in slug for k in ['mulher', 'fem', 'mujer', 'hetero', 'crianca']):
+        return 'Mulher (declaração simples e variações)'
+    return 'Mulher (declaração simples e variações)'
 
 def normalize_marital_status(val):
     if pd.isna(val) or not str(val).strip():
@@ -353,91 +379,49 @@ def normalize_area(val):
 
 def extract_agressor_items(val):
     if pd.isna(val) or not str(val).strip():
-        return ['Não informado / Encaminhamento externo']
+        return ['Não informado / Sem especificação']
     s = remove_accents(str(val)).lower().strip()
-    if any(k in s for k in ['delegacia', 'site da defensoria', 'nan', 'none', 'nao informado', 'nao se aplica']):
-        return ['Não informado / Encaminhamento externo']
+    if any(k in s for k in ['site da defensoria', 'nan', 'none', 'nao informado', 'nao se aplica']):
+        return ['Não informado / Sem especificação']
         
     items = []
     
     # Ex-companheiro(a)
     if any(k in s for k in ['ex-companheir', 'ex companheir', 'excompanheir', 'ex-marid', 'exmarid', 'ex-namorad', 'exnamorad', 'ex-espos', 'ex-conjuge', 'ex-companhiro']):
-        items.append('Ex-companheiro(a)')
+        items.append('Ex-companheiro(a) / Ex-marido')
     elif 'primo/ex-companheiro' in s or 'ex-companheiro de sua ex-companheira' in s:
-        items.append('Ex-companheiro(a)')
+        items.append('Ex-companheiro(a) / Ex-marido')
         
     # Companheiro(a) atual
     if any(k in s for k in ['companheir', 'marido', 'namorad', 'espos', 'conjuge']) and 'ex' not in s:
-        items.append('Companheiro(a) atual')
+        items.append('Companheiro / Cônjuge (atual)')
         
     # Genitores / Pais
-    if 'genitora' in s or 'mae' in s:
-        items.append('Mãe')
-    if (re.search(r'\b(genitor|pai)\b', s) or 'genitor e genitora' in s or 'genitor/pai' in s) and 'genitora/mae' not in s:
-        items.append('Pai')
-    if 'padrasto' in s:
-        items.append('Padrasto')
+    if 'genitor' in s or 'mae' in s or (re.search(r'\b(genitor|pai)\b', s) or 'genitor e genitora' in s or 'genitor/pai' in s):
+        items.append('Genitor(a) (Pai/Mãe)')
         
     # Filhos
-    if 'filha' in s:
-        items.append('Filha')
-    elif 'filh' in s:
-        items.append('Filho')
-        
-    # Nora e Genro
-    if 'nora' in s:
-        items.append('Nora')
-    if 'genro' in s:
-        items.append('Genro')
+    if 'filha' in s or 'filh' in s:
+        items.append('Filho(a)')
         
     # Irmãos e Sobrinhos
-    if 'irma' in s:
-        items.append('Irmã')
-    if 'irmao' in s:
-        items.append('Irmão')
-    if 'sobrinh' in s:
-        items.append('Sobrinho')
+    if 'irma' in s or 'irmao' in s:
+        items.append('Irmão/Irmã')
         
-    # Primos
-    if 'prima' in s:
-        items.append('Prima')
-    elif 'prim' in s and 'ex-companheiro' not in s:
-        items.append('Primo')
-        
-    # Sogro(a)
-    if 'ex-sogr' in s or 'sogr' in s:
-        items.append('Sogro(a) / Ex-sogro(a)')
-        
-    # Cunhados
-    if 'cunhada' in s:
-        items.append('Cunhada')
-    elif 'cunhad' in s:
-        items.append('Cunhado')
-        
-    # Neto e Tio
-    if 'net' in s:
-        items.append('Neto')
-    if 'ti' in s:
-        items.append('Tio')
-        
-    # Outros
-    if 'amig' in s or 'ex-amig' in s:
-        items.append('Amigo(a)')
-    if 'colega' in s:
-        items.append('Outros familiares / parentes')
-    if 'vizinh' in s:
-        items.append('Vizinho(a)')
-    if 'parent' in s:
-        items.append('Outros familiares / parentes')
+    # Outros familiares / Parentes (sogro, cunhado, etc.)
+    if any(k in s for k in ['sogr', 'cunhad', 'prim', 'tio', 'net', 'nora', 'genro', 'parent', 'familiar']):
+        items.append('Outros familiares / Parentes (sogro, cunhado, etc.)')
         
     if not items:
-        items.append('Outros vínculos')
+        items.append('Outros vínculos informados')
         
-    return items
+    seen = set()
+    uniq = [it for it in items if not (it in seen or seen.add(it))]
+    return uniq
 
 def normalize_agressor_profile(val):
     items = extract_agressor_items(val)
-    return ', '.join(items) if items else 'Não informado / Encaminhamento externo'
+    return ', '.join(items) if items else 'Não informado / Sem especificação'
 
 def extract_violence_types(text):
     """
@@ -492,24 +476,22 @@ def extract_violence_types(text):
 def extract_referral_channel(text):
     if pd.isna(text) or not isinstance(text, str) or not text.strip():
         return 'Não informado'
-    s = remove_accents(text)
+    s = remove_accents(text).lower().strip()
     
-    if re.search(r'\b(cras|creas|assistencia social|assistente social|cras / creas)\b', s):
-        return 'CRAS / CREAS / Assistência Social'
-    if re.search(r'\b(forum|vara|juiz|justica|tribunal|judiciario|oficial de justica|promotoria|ministerio publico)\b', s):
-        return 'Poder Judiciário / Fórum / Vara'
-    if re.search(r'\b(delegacia|policia|boletim|b\.o|bo|dpcami|boletim de ocorrencia)\b', s):
-        return 'Delegacia / Polícia / Boletim de Ocorrência'
-    if re.search(r'\b(defensoria|oab|advogad|defensora|defensor)\b', s):
-        return 'Defensoria Pública / OAB'
-    if re.search(r'\b(instagram|rede social|facebook|google|internet|site|tiktok|whatsapp)\b', s):
-        return 'Redes Sociais / Internet'
-    if re.search(r'\b(amig|familiar|conhecid|indicac|mae|prima|vizinh|irma|parente|colega)\b', s):
-        return 'Indicação (Amigos/Familiares)'
-    if re.search(r'\b(caps|posto|saude|hospital|medico|psicolog)\b', s):
-        return 'Saúde / CAPS / Posto'
+    if any(k in s for k in ['delegacia', 'policia', 'catarina', 'dpcami', 'boletim']):
+        return 'Delegacia / Polícia Civil / Polícia Militar / Rede Catarina'
+    if any(k in s for k in ['cras', 'creas', 'assistencia social', 'assistente social', 'posto de saude', 'posto', 'hospital', 'saude']):
+        return 'CRAS / CREAS / Assistência Social / Saúde'
+    if any(k in s for k in ['forum', 'tribunal', 'judiciario', 'ministerio publico', 'promotoria', 'vara', 'juizado', 'oficial de justica', 'despacho']):
+        return 'Fórum / Poder Judiciário / Ministério Público / MPU'
+    if any(k in s for k in ['defensoria', 'defensora', 'triagem', 'balcao', 'ouvidoria defensoria', 'dpe']):
+        return 'Defensoria Pública (Atendimento/Triagem/Balcão)'
+    if any(k in s for k in ['google', 'internet', 'site', 'pesquisa', 'online', 'chatgpt', 'chat gpt', 'chat.gpt', 'ia', 'inteligencia artificial', 'instagram', 'redes sociais', 'rede social', 'aplicativo', 'dola']):
+        return 'Internet / Google / Pesquisa Online'
+    if any(k in s for k in ['amig', 'familiar', 'conhecid', 'mae', 'filha', 'colega', 'vizinh', 'parente']):
+        return 'Indicação de Amigos / Familiares / Conhecidos'
         
-    return 'Outros / Indicação Direta'
+    return 'Outros encaminhamentos'
 
 def mask_name(val):
     if not isinstance(val, str) or not val.strip():
@@ -551,23 +533,23 @@ def mask_email(val):
     return f'{masked_user}@{domain}'
 
 def match_column(col_name):
-    c = remove_accents(str(col_name))
+    c = remove_accents(str(col_name)).lower().strip()
     
     if re.search(r'\b(carimbo|timestamp|data/hora|data_hora)\b', c) or c.startswith('data de atendimento'):
         return 'data_hora'
-    if re.search(r'\bnome\b', c):
+    if re.search(r'\bnome\b', c) or c == 'coluna 2':
         return 'nome'
-    if re.search(r'\b(celular|whatsapp)\b', c):
+    if re.search(r'\b(celular|whatsapp)\b', c) or c == 'coluna 3':
         return 'celular'
     if re.search(r'\b(fixo|telefone fixo)\b', c):
         return 'telefone_fixo'
-    if re.search(r'\b(e-mail|email)\b', c):
+    if re.search(r'\b(e-mail|email)\b', c) or c == 'coluna 4':
         return 'email'
-    if re.search(r'\b(nascimento|data de nascimento)\b', c):
+    if re.search(r'\b(nascimento|data de nascimento)\b', c) or c == 'coluna 5':
         return 'data_nascimento'
-    if re.search(r'\bcpf\b', c):
+    if re.search(r'\bcpf\b', c) or c == 'coluna 6':
         return 'cpf'
-    if re.search(r'\brg\b', c):
+    if re.search(r'\brg\b', c) or c == 'coluna 7':
         return 'rg'
     if re.search(r'\b(faixa etaria|faixa_etaria)\b', c) or (re.search(r'\bidade\b', c) and 'identidade' not in c and 'cidade' not in c):
         return 'faixa_etaria'
@@ -585,7 +567,7 @@ def match_column(col_name):
         return 'tipo_area'
     if re.search(r'\b(fatos|violencia sofrida|relato|conte resumidamente|tipo da violencia)\b', c):
         return 'relato_fatos'
-    if re.search(r'\b(agressor|agressora|perfil)\b', c):
+    if re.search(r'\b(agressor|agressora|perfil|relacao com a pessoa|pessoa que praticou)\b', c):
         return 'perfil_agressor'
     if re.search(r'\b(conheceu|como conheceu|forma conheceu)\b', c):
         return 'como_conheceu'
@@ -646,13 +628,13 @@ def load_data_from_excel(file_source, filename='Planilha'):
         return pd.concat(dfs, ignore_index=True)
     return pd.DataFrame()
 
-def load_all_data(folder_path='.', uploaded_files=None):
-    all_dfs = []
+def find_data_files(folder_path='.'):
     search_dirs = [folder_path]
     dados_subfolder = os.path.join(folder_path, 'dados')
     if os.path.exists(dados_subfolder) and os.path.isdir(dados_subfolder):
         search_dirs.append(dados_subfolder)
         
+    found = []
     for sdir in search_dirs:
         patterns = [os.path.join(sdir, '*.xlsx'), os.path.join(sdir, '*.xls')]
         for pat in patterns:
@@ -660,9 +642,24 @@ def load_all_data(folder_path='.', uploaded_files=None):
                 fname = os.path.basename(file_path)
                 if fname.startswith('~$') or 'backup' in fname.lower():
                     continue
-                df_file = load_data_from_excel(file_path, fname)
-                if not df_file.empty:
-                    all_dfs.append(df_file)
+                found.append(file_path)
+                
+    # Se 'controle_dados.xlsx' existir, ele é a base primária oficial consolidada.
+    # Evita carregar arquivos duplicados do mesmo controle.
+    has_controle_dados = any(os.path.basename(f).lower() == 'controle_dados.xlsx' for f in found)
+    if has_controle_dados:
+        found = [f for f in found if os.path.basename(f).lower() == 'controle_dados.xlsx' or not ('controle' in os.path.basename(f).lower())]
+        
+    return found
+
+def load_all_data(folder_path='.', uploaded_files=None):
+    all_dfs = []
+    file_paths = find_data_files(folder_path)
+    for file_path in file_paths:
+        fname = os.path.basename(file_path)
+        df_file = load_data_from_excel(file_path, fname)
+        if not df_file.empty:
+            all_dfs.append(df_file)
                     
     if uploaded_files:
         for uf in uploaded_files:
@@ -833,21 +830,12 @@ def load_atendimentos_from_excel(file_source, filename='Planilha'):
 
 def load_atendimentos_data(folder_path='.', uploaded_files=None):
     all_dfs = []
-    search_dirs = [folder_path]
-    dados_subfolder = os.path.join(folder_path, 'dados')
-    if os.path.exists(dados_subfolder) and os.path.isdir(dados_subfolder):
-        search_dirs.append(dados_subfolder)
-        
-    for sdir in search_dirs:
-        patterns = [os.path.join(sdir, '*.xlsx'), os.path.join(sdir, '*.xls')]
-        for pat in patterns:
-            for file_path in glob.glob(pat):
-                fname = os.path.basename(file_path)
-                if fname.startswith('~$') or 'backup' in fname.lower():
-                    continue
-                df_at = load_atendimentos_from_excel(file_path, fname)
-                if not df_at.empty:
-                    all_dfs.append(df_at)
+    file_paths = find_data_files(folder_path)
+    for file_path in file_paths:
+        fname = os.path.basename(file_path)
+        df_at = load_atendimentos_from_excel(file_path, fname)
+        if not df_at.empty:
+            all_dfs.append(df_at)
                     
     if uploaded_files:
         for uf in uploaded_files:
@@ -863,7 +851,7 @@ def load_atendimentos_data(folder_path='.', uploaded_files=None):
         
     combined = pd.concat(all_dfs, ignore_index=True)
 
-    # Considerar apenas atendimentos até 31/08/2026
+    # Considerar atendimentos até 30/09/2026
     if 'data' in combined.columns:
         combined = combined[
             combined['data'].isna() | (combined['data'] <= DATA_CUTOFF)
@@ -873,23 +861,29 @@ def load_atendimentos_data(folder_path='.', uploaded_files=None):
 
 def categorize_peticao_tipo(val):
     if not val or pd.isna(val):
-        return 'Outras Petições'
-    s = str(val).lower()
-    if 'pedido de mpu' in s or 'pedido incidental de mpu' in s:
-        return 'Pedido de MPU (Inicial / Incidental)'
-    if 'descumprimento' in s:
-        return 'Descumprimento de MPU'
-    if 'habilita' in s:
-        return 'Pedido de Habilitação'
-    if 'revoga' in s:
-        return 'Revogação de MPU'
-    if 'agravo' in s or 'recurso' in s or 'embargos' in s:
-        return 'Recursos / Embargos'
-    if 'intermedi' in s:
-        return 'Petição Intermediária'
-    if 'diversas' in s:
-        return 'Petições Diversas'
-    return 'Outras Petições'
+        return 'Petições diversas / manifestações intermediárias'
+    s = remove_accents(str(val)).lower().strip()
+    
+    # 1. Pedido de MPU e habilitação -> MPU
+    if 'mpu e habilitacao' in s:
+        return 'Pedidos de medidas protetivas de urgência - MPU'
+    # 2. Descumprimento de MPU (inclui pedidos de prisão)
+    if 'descumprimento' in s or 'prisao' in s:
+        return 'Petições de descumprimento de MPU'
+    # 3. Pedidos de MPU (iniciais e incidentais)
+    if 'mpu' in s and 'revoga' not in s:
+        return 'Pedidos de medidas protetivas de urgência - MPU'
+    # 4. Pedidos de habilitação nos autos (exclusivamente habilitação pura)
+    if 'habilita' in s and 'diversas' not in s and 'mpu' not in s:
+        return 'Pedidos de habilitação nos autos'
+    # 5. Revogação / Flexibilização de MPU
+    if 'revoga' in s or 'flexibilizacao' in s:
+        return 'Pedidos de revogação/flexibilização de MPU'
+    # 6. Recursos (Agravos, apelações, embargos, contrarrazões, RESE)
+    if any(k in s for k in ['agravo', 'apelac', 'embargo', 'contrarrazoes', 'rese', 'recurso']):
+        return 'Recursos (Agravos, apelações, etc.)'
+    # 7. Petições diversas / manifestações intermediárias
+    return 'Petições diversas / manifestações intermediárias'
 
 def load_peticoes_from_excel(file_source, filename='Planilha'):
     try:
@@ -909,13 +903,15 @@ def load_peticoes_from_excel(file_source, filename='Planilha'):
         if df_raw.empty or df_raw.shape[1] < 2:
             return pd.DataFrame()
             
+        df_raw = df_raw.dropna(subset=[df_raw.columns[0], df_raw.columns[1]], how='all')
+        
         df = pd.DataFrame()
         df['mes_nome'] = df_raw.iloc[:, 0].astype(str).str.strip()
         df['tipo_peticao'] = df_raw.iloc[:, 1].astype(str).str.strip()
         df['data_protocolo'] = pd.to_datetime(df_raw.iloc[:, 3], errors='coerce') if df_raw.shape[1] > 3 else pd.NaT
         
-        df = df[~df['mes_nome'].isin(['nan', 'None', '', 'Mês'])].copy()
-        df = df[~df['tipo_peticao'].isin(['nan', 'None', '', 'Petição'])].copy()
+        df = df[~df['mes_nome'].astype(str).str.lower().isin(['nan', 'none', '<na>', '', 'mês', 'mes'])].copy()
+        df = df[~df['tipo_peticao'].astype(str).str.lower().isin(['nan', 'none', '<na>', '', 'petição', 'peticao'])].copy()
         
         df['categoria_peticao'] = df['tipo_peticao'].apply(categorize_peticao_tipo)
         
@@ -938,21 +934,12 @@ def load_peticoes_from_excel(file_source, filename='Planilha'):
 
 def load_peticoes_data(folder_path='.', uploaded_files=None):
     all_dfs = []
-    search_dirs = [folder_path]
-    dados_subfolder = os.path.join(folder_path, 'dados')
-    if os.path.exists(dados_subfolder) and os.path.isdir(dados_subfolder):
-        search_dirs.append(dados_subfolder)
-        
-    for sdir in search_dirs:
-        patterns = [os.path.join(sdir, '*.xlsx'), os.path.join(sdir, '*.xls')]
-        for pat in patterns:
-            for file_path in glob.glob(pat):
-                fname = os.path.basename(file_path)
-                if fname.startswith('~$') or 'backup' in fname.lower():
-                    continue
-                df_pt = load_peticoes_from_excel(file_path, fname)
-                if not df_pt.empty:
-                    all_dfs.append(df_pt)
+    file_paths = find_data_files(folder_path)
+    for file_path in file_paths:
+        fname = os.path.basename(file_path)
+        df_pt = load_peticoes_from_excel(file_path, fname)
+        if not df_pt.empty:
+            all_dfs.append(df_pt)
                     
     if uploaded_files:
         for uf in uploaded_files:

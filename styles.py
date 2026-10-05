@@ -371,8 +371,138 @@ CUSTOM_CSS = f"""
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         font-weight: 600 !important;
     }}
+    /* =================================================================
+       RESPONSIVIDADE MOBILE COMPLETA (Smartphones e Tablets)
+       Adaptação perfeita de layout, cards, cabeçalho e abas em telas pequenas
+       ================================================================= */
+    @media (max-width: 768px) {{
+        /* Aproveitamento máximo da tela do celular sem margens excessivas */
+        .block-container {{
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
+            padding-left: 0.65rem !important;
+            padding-right: 0.65rem !important;
+            max-width: 100% !important;
+        }}
+
+        /* Cabeçalho institucional empilhado verticalmente de forma harmoniosa */
+        .main-header {{
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            padding: 1rem 1.1rem !important;
+            gap: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            border-radius: 12px !important;
+        }}
+        .main-header h1, [data-testid="stHeader"] h1, .stMarkdown .main-header h1 {{
+            font-size: 1.45rem !important;
+            line-height: 1.25 !important;
+        }}
+        .main-header p {{
+            font-size: 0.82rem !important;
+            line-height: 1.35 !important;
+        }}
+        .badge-status {{
+            font-size: 0.75rem !important;
+            padding: 0.35rem 0.75rem !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            line-height: 1.3 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            text-align: center !important;
+        }}
+
+        /* Disposição fluida das colunas Streamlit para evitar esmagamento em telas estreitas */
+        [data-testid="stHorizontalBlock"] {{
+            flex-wrap: wrap !important;
+            gap: 0.6rem !important;
+        }}
+        [data-testid="column"] {{
+            min-width: calc(50% - 0.4rem) !important;
+            flex: 1 1 calc(50% - 0.4rem) !important;
+        }}
+
+        /* Cards de indicadores (KPIs) ajustados para celular */
+        .kpi-card {{
+            padding: 0.85rem 1rem !important;
+            border-radius: 10px !important;
+            margin-bottom: 0.35rem !important;
+        }}
+        .kpi-title {{
+            font-size: 0.75rem !important;
+            line-height: 1.2 !important;
+            margin-bottom: 0.25rem !important;
+        }}
+        .kpi-value {{
+            font-size: 1.45rem !important;
+            margin-bottom: 0.15rem !important;
+        }}
+        .kpi-subtitle {{
+            font-size: 0.70rem !important;
+            line-height: 1.2 !important;
+        }}
+
+        /* Abas com rolagem horizontal suave no celular */
+        [data-testid="stTabs"] [role="tablist"],
+        .stTabs [role="tablist"],
+        .stTabs [data-baseweb="tab-list"] {{
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding-bottom: 4px !important;
+            scrollbar-width: thin !important;
+        }}
+        [data-testid="stTab"],
+        [data-testid="stTabs"] button,
+        [data-testid="stTabs"] [role="tab"] {{
+            padding: 6px 12px !important;
+            font-size: 0.82rem !important;
+            white-space: nowrap !important;
+        }}
+
+        /* Gráficos e elementos visuais sem overflow */
+        .js-plotly-plot, .plot-container {{
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }}
+
+        /* Tabelas e Dataframes com rolagem touch suave */
+        [data-testid="stDataFrame"], [data-testid="stTable"] {{
+            width: 100% !important;
+            overflow-x: auto !important;
+        }}
+    }}
+
+    @media (max-width: 480px) {{
+        /* Telas ultra compactas (smartphones em modo retrato estreito) */
+        [data-testid="column"] {{
+            min-width: 100% !important;
+            flex: 1 1 100% !important;
+        }}
+        .main-header h1, [data-testid="stHeader"] h1, .stMarkdown .main-header h1 {{
+            font-size: 1.3rem !important;
+        }}
+        .kpi-value {{
+            font-size: 1.35rem !important;
+        }}
+    }}
 </style>
 """
+
+# ------------------------------------------------------------------
+# Paleta de Cores para Raça/Cor — Variações da Identidade Visual DefenDelas
+# Harmoniosa, acolhedora, com contraste visual e legibilidade ideal
+# ------------------------------------------------------------------
+RACE_COLORS = {
+    'Branca': BRAND_PURPLE,        # #654D9D (Roxo institucional DefenDelas)
+    'Parda': BRAND_PEACH_DEEP,     # #E8A87C (Pêssego / Terracota suave DefenDelas)
+    'Preta': '#352458',            # Roxo nobre escuro / beringela institucional
+    'Amarela': BRAND_GREEN,        # #9EC44D (Verde principal da marca)
+    'Indígena': BRAND_GREEN_DARK,  # #7CA33A (Verde escuro institucional)
+    'Não informado': '#C4B5E0',    # Lavanda suave / lilás neutro da paleta
+}
 
 # ------------------------------------------------------------------
 # Paleta de Cores para Gráficos Plotly — Tons escuros, nítidos e contrastados
@@ -437,14 +567,15 @@ def apply_chart_theme(fig, left_margin=None, bottom_margin=None, top_margin=None
         linecolor='#E8E2F2'
     )
     fig.update_layout(
+        autosize=True,
         font=dict(family='Plus Jakarta Sans, Segoe UI, sans-serif', color=BRAND_PURPLE_DARK, size=12),
         legend=dict(
             font=dict(family='Plus Jakarta Sans, Segoe UI, sans-serif', color=BRAND_PURPLE_DARK, size=12)
         )
     )
 
-    # Aplicação de margens específicas
-    margins = {'l': 70, 'r': 40, 't': 50, 'b': 60}
+    # Aplicação de margens específicas com suporte a layout fluido
+    margins = {'l': 30, 'r': 25, 't': 45, 'b': 45}
     if left_margin is not None:
         margins['l'] = left_margin
     if bottom_margin is not None:
@@ -453,7 +584,7 @@ def apply_chart_theme(fig, left_margin=None, bottom_margin=None, top_margin=None
         margins['t'] = top_margin
     if right_margin is not None:
         margins['r'] = right_margin
-    fig.update_layout(margin=margins)
+    fig.update_layout(margin=margins, autosize=True)
 
     try:
         fig.update_traces(selector=dict(type='bar'), cliponaxis=False)
