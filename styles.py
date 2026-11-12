@@ -234,6 +234,112 @@ CUSTOM_CSS = f"""
     }}
 
     /* =================================================================
+       FORÇAR TEMA CLARO EM INPUTS, SELECTBOXES, DATAS E TABELAS
+       (Garante legibilidade total mesmo se o navegador estiver em Modo Escuro)
+       ================================================================= */
+    /* Caixas de seleção (Selectbox, Multiselect) e Inputs de Data */
+    [data-baseweb="select"] > div,
+    [data-baseweb="select"] div,
+    [data-baseweb="input"],
+    [data-baseweb="input"] > div,
+    [data-baseweb="input"] input,
+    [data-testid="stDateInput"] input,
+    [data-testid="stDateInput"] > div,
+    [data-testid="stMultiSelect"] > div,
+    .stSelectbox div[data-baseweb="select"] > div,
+    .stSelectbox [data-baseweb="select"] {{
+        background-color: #FFFFFF !important;
+        color: {BRAND_PURPLE_DARK} !important;
+        border-color: #E8A87C !important;
+        border-radius: 8px !important;
+    }}
+
+    /* Textos internos dentro dos seletores e inputs */
+    [data-baseweb="select"] span,
+    [data-baseweb="select"] p,
+    [data-baseweb="select"] div,
+    [data-baseweb="input"] input,
+    [data-testid="stDateInput"] input {{
+        color: {BRAND_PURPLE_DARK} !important;
+        -webkit-text-fill-color: {BRAND_PURPLE_DARK} !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Ícone de seta e calendário */
+    [data-baseweb="select"] svg,
+    [data-testid="stDateInput"] svg {{
+        fill: {BRAND_PURPLE_DARK} !important;
+        color: {BRAND_PURPLE_DARK} !important;
+    }}
+
+    /* Tags/Chips selecionadas dentro do Multiselect */
+    [data-baseweb="tag"] {{
+        background-color: {BRAND_PEACH} !important;
+        color: {BRAND_PURPLE_DARK} !important;
+        border: 1px solid #E8A87C !important;
+    }}
+    [data-baseweb="tag"] span {{
+        color: {BRAND_PURPLE_DARK} !important;
+    }}
+
+    /* Menu suspenso (dropdown popover) que abre ao clicar */
+    [data-baseweb="popover"],
+    [data-baseweb="menu"],
+    [role="listbox"],
+    ul[role="listbox"] {{
+        background-color: #FFFFFF !important;
+        color: {BRAND_PURPLE_DARK} !important;
+        border: 1px solid #E8A87C !important;
+        border-radius: 8px !important;
+    }}
+
+    li[role="option"] {{
+        background-color: #FFFFFF !important;
+        color: {BRAND_PURPLE_DARK} !important;
+    }}
+
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"] {{
+        background-color: {BRAND_PEACH} !important;
+        color: {BRAND_PURPLE} !important;
+    }}
+
+    li[role="option"] span,
+    li[role="option"] div {{
+        color: {BRAND_PURPLE_DARK} !important;
+    }}
+
+    /* Contêiner das tabelas (st.dataframe e st.table) */
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"],
+    .stDataFrame,
+    .stTable {{
+        background-color: #FFFFFF !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 10px rgba(101, 77, 157, 0.05) !important;
+        border: 1px solid {BRAND_PEACH} !important;
+    }}
+
+    /* Tabelas HTML padrão (st.table) */
+    table.dataframe,
+    [data-testid="stTable"] table {{
+        background-color: #FFFFFF !important;
+        color: {BRAND_PURPLE_DARK} !important;
+    }}
+    table.dataframe th,
+    [data-testid="stTable"] th {{
+        background-color: {BRAND_PEACH} !important;
+        color: {BRAND_PURPLE_DARK} !important;
+        font-weight: 700 !important;
+    }}
+    table.dataframe td,
+    [data-testid="stTable"] td {{
+        background-color: #FFFFFF !important;
+        color: {BRAND_PURPLE_DARK} !important;
+        border-bottom: 1px solid #F0E8F8 !important;
+    }}
+
+    /* =================================================================
        Abas (Tabs) - Compatibilidade 100% com Streamlit 1.62+ (React Aria)
        e versões anteriores (BaseWeb). Garante visibilidade total sem precisar do hover!
        ================================================================= */
