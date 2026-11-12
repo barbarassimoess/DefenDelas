@@ -19,7 +19,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from data_loader import load_all_dashboard_data
+from data_loader import load_all_dashboard_data, CITIES_DB
 
 # Importa os estilos garantindo o funcionamento do caminho
 try:
@@ -82,7 +82,7 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # 2. Carregamento dos Dados com Cache
 @st.cache_data(show_spinner=False)
-def get_dashboard_data(folder_path=".", cache_key="v4_setembro_2026"):
+def get_dashboard_data(folder_path=".", cache_key="v7_outubro_2026_oficial"):
     return load_all_dashboard_data(folder_path=folder_path)
 
 # Sidebar: Logo e Identidade Visual DefenDelas
@@ -111,7 +111,7 @@ if is_admin:
 if uploaded_files:
     raw_data = load_all_dashboard_data(folder_path=".", uploaded_files=uploaded_files)
 else:
-    raw_data = get_dashboard_data(".", cache_key="v4_setembro_2026")
+    raw_data = get_dashboard_data(".", cache_key="v7_outubro_2026_oficial")
 
 df_forms_raw = raw_data.get('formularios', pd.DataFrame())
 df_atend_raw = raw_data.get('atendimentos', pd.DataFrame())
@@ -224,7 +224,7 @@ if not df_atend.empty:
 
 # 5. Header Principal
 total_forms_global = len(df_forms_raw)
-total_atend_global = 1897 if len(df_atend_raw) >= 1897 else len(df_atend_raw)
+total_atend_global = len(df_atend_raw)
 total_pet_global = len(df_pet_raw)
 
 st.markdown(f"""
@@ -234,7 +234,7 @@ st.markdown(f"""
         <p>Monitoramento de formulários de acolhimento, atendimentos e petições judiciais (CEDEM)</p>
     </div>
     <div class="badge-status">
-        Base atualizada • {total_forms_global} formulários • {total_atend_global} atendimentos efetivos • {total_pet_global} petições
+        Base atualizada (até Outubro/2026) • {total_forms_global} formulários • {total_atend_global} atendimentos • {total_pet_global} petições
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -254,8 +254,7 @@ tabs = st.tabs([
     "👤 Perfil sociodemográfico",
     "📍 Distribuição geográfica (SC)",
     "⚖️ Tipos de violência (Lei Maria da Penha)",
-    "📢 Canais de entrada",
-    "📋 Explorador de dados & exportação"
+    "📢 Canais de entrada"
 ])
 
 # ==========================================
@@ -263,22 +262,17 @@ tabs = st.tabs([
 # ==========================================
 with tabs[0]:
     total_formularios = len(df)
-    # Total de atendimentos efetivos conforme relatório oficial CEDEM
-    if len(df_atend) == len(df_atend_raw):
-        total_telefone = 1492
-        total_video = 235
-    else:
-        total_telefone = int((df_atend['categoria_modalidade'] == 'Telefone (mensagem)').sum()) if not df_atend.empty else 0
-        total_video = int((df_atend['categoria_modalidade'] == 'Atendimento por vídeo').sum()) if not df_atend.empty else 0
+    total_telefone = int((df_atend['categoria_modalidade'] == 'Telefone (mensagem)').sum()) if not df_atend.empty else 0
+    total_video = int((df_atend['categoria_modalidade'] == 'Atendimento por vídeo').sum()) if not df_atend.empty else 0
     total_peticoes = len(df_pet)
     cidades_unicas = df['municipio'].nunique() if not df.empty else 0
     
     # Linha 1 de KPIs Principais Integrados
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">Formulários recebidos</div><div class="kpi-value">{total_formularios}</div><div class="kpi-subtitle">Solicitações online recebidas</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">Formulários recebidos</div><div class="kpi-value">{total_formularios}</div><div class="kpi-subtitle">Solicitações registradas até Out/2026</div></div>""", unsafe_allow_html=True)
     with col2:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Telefone (mensagem)</div><div class="kpi-value">{total_telefone}</div><div class="kpi-subtitle">1.492 atendimentos • 507 assistidas</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Telefone (mensagem)</div><div class="kpi-value">{total_telefone}</div><div class="kpi-subtitle">Contatos contínuos e WhatsApp</div></div>""", unsafe_allow_html=True)
     with col3:
         st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Atendimentos por vídeo</div><div class="kpi-value">{total_video}</div><div class="kpi-subtitle">Sessões com comparecimento</div></div>""", unsafe_allow_html=True)
     with col4:
@@ -291,7 +285,7 @@ with tabs[0]:
     # Gráfico de Evolução Mensal Integrada (Formulários x Atendimentos x Petições)
     st.markdown("#### Evolução mensal integrada das demandas (2026)")
     
-    months_series = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09']
+    months_series = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10']
     
     forms_m = df['mes_ano'].value_counts() if not df.empty else pd.Series()
     tel_m = df_atend[df_atend['categoria_modalidade'] == 'Telefone (mensagem)']['mes_ano'].value_counts() if not df_atend.empty else pd.Series()
@@ -367,76 +361,127 @@ with tabs[0]:
 # ABA 2: ATENDIMENTOS DA EQUIPE
 # ==========================================
 with tabs[1]:
-    st.markdown("### Monitoramento de atendimentos realizados")
-    st.caption("Acompanhamento das atividades de atendimento individualizado por telefone (mensagem) e por vídeo.")
+    st.markdown("### Monitoramento de atendimentos realizados (Março a Outubro/2026)")
+    st.caption("Acompanhamento contínuo das atividades de atendimento individualizado por telefone (mensagem) e por vídeo.")
     
     if not df_atend.empty:
-        is_all_atend = (len(df_atend) == len(df_atend_raw))
-        total_telefone = 1492 if is_all_atend else int((df_atend['categoria_modalidade'] == 'Telefone (mensagem)').sum())
-        total_video = 235 if is_all_atend else int((df_atend['categoria_modalidade'] == 'Atendimento por vídeo').sum())
-        total_geral_efetivo = 1897 if is_all_atend else (total_telefone + total_video)
+        total_telefone = int((df_atend['categoria_modalidade'] == 'Telefone (mensagem)').sum())
+        total_video = int((df_atend['categoria_modalidade'] == 'Atendimento por vídeo').sum())
+        total_geral_efetivo = len(df_atend)
         
-        # Linha 1 de KPIs
+        dias_uteis = df_atend['data_apenas'].dropna().nunique()
+        semanas_uteis = max(1, round(dias_uteis / 5, 1))
+        
+        media_semanal_tel = round(total_telefone / semanas_uteis, 1) if semanas_uteis else 0
+        media_diaria_tel = round(total_telefone / dias_uteis, 1) if dias_uteis else 0
+        
+        dias_com_video = df_atend[df_atend['categoria_modalidade'] == 'Atendimento por vídeo']['data_apenas'].dropna().nunique()
+        media_semanal_vid = round(total_video / semanas_uteis, 1) if semanas_uteis else 0
+        media_diaria_vid = round(total_video / dias_com_video, 1) if dias_com_video else 0
+        
+        media_semanal_total = round(total_geral_efetivo / semanas_uteis, 1) if semanas_uteis else 0
+        media_diaria_total = round(total_geral_efetivo / dias_uteis, 1) if dias_uteis else 0
+        
+        # Linha 1 de KPIs (Dados Consolidados até Outubro/2026)
         k_at1, k_at2, k_at3 = st.columns(3)
         with k_at1:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Telefone (mensagem / WhatsApp)</div><div class="kpi-value">{total_telefone}</div><div class="kpi-subtitle">Atendimentos diretos • 507 assistidas distintas</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Telefone (mensagem / WhatsApp)</div><div class="kpi-value">{total_telefone}</div><div class="kpi-subtitle">{(total_telefone/total_geral_efetivo*100):.1f}% do total • Atendimentos continuados</div></div>""", unsafe_allow_html=True)
         with k_at2:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Atendimentos por vídeo</div><div class="kpi-value">{total_video}</div><div class="kpi-subtitle">Sessões com comparecimento efetivo</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Atendimentos por vídeo</div><div class="kpi-value">{total_video}</div><div class="kpi-subtitle">{(total_video/total_geral_efetivo*100):.1f}% do total • Sessões com comparecimento</div></div>""", unsafe_allow_html=True)
         with k_at3:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Total geral de atendimentos efetivos</div><div class="kpi-value">{total_geral_efetivo}</div><div class="kpi-subtitle">150 dias úteis (30 semanas de atuação)</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Total geral de atendimentos</div><div class="kpi-value">{total_geral_efetivo}</div><div class="kpi-subtitle">{dias_uteis} dias com atividades registradas</div></div>""", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Linha 2 de Médias Semanais e Diárias Oficiais CEDEM
+        # Linha 2 de Médias Semanais e Diárias
         k_at4, k_at5, k_at6 = st.columns(3)
         with k_at4:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Média semanal (Telefone)</div><div class="kpi-value">49,73</div><div class="kpi-subtitle">9,95 atendimentos por dia útil</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Média semanal (Telefone)</div><div class="kpi-value">{media_semanal_tel}</div><div class="kpi-subtitle">{media_diaria_tel} atendimentos por dia ativo</div></div>""", unsafe_allow_html=True)
         with k_at5:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Média semanal (Vídeo)</div><div class="kpi-value">7,83</div><div class="kpi-subtitle">2,10 atendimentos por dia com sessões</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Média semanal (Vídeo)</div><div class="kpi-value">{media_semanal_vid}</div><div class="kpi-subtitle">{media_diaria_vid} sessões por dia com agendamentos</div></div>""", unsafe_allow_html=True)
         with k_at6:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Média semanal consolidada</div><div class="kpi-value">63,23</div><div class="kpi-subtitle">Atendimentos por semana útil (seg. a sex.)</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Média semanal consolidada</div><div class="kpi-value">{media_semanal_total}</div><div class="kpi-subtitle">{media_diaria_total} atendimentos por dia (todas as modalidades)</div></div>""", unsafe_allow_html=True)
 
-        # Nota Oficial: Telefone e Mensagens (WhatsApp)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Gráfico 1: Evolução Mensal dos Atendimentos por Modalidade (Março a Outubro)
+        meses_rotulos = {
+            '2026-03': 'Mar/2026', '2026-04': 'Abr/2026', '2026-05': 'Mai/2026',
+            '2026-06': 'Jun/2026', '2026-07': 'Jul/2026', '2026-08': 'Ago/2026',
+            '2026-09': 'Set/2026', '2026-10': 'Out/2026'
+        }
+        df_evol_at = df_atend.groupby(['mes_ano', 'categoria_modalidade']).size().reset_index(name='Atendimentos')
+        df_evol_at['Mês'] = df_evol_at['mes_ano'].map(meses_rotulos).fillna(df_evol_at['mes_ano'])
+        
+        fig_evol_at = px.bar(
+            df_evol_at, x='Mês', y='Atendimentos', color='categoria_modalidade',
+            title="Evolução mensal dos atendimentos por modalidade (2026)",
+            barmode='group',
+            color_discrete_sequence=[BRAND_PURPLE_DARK, BRAND_GREEN, BRAND_PEACH_DEEP, BRAND_PURPLE_LIGHT, BRAND_GREEN_DARK, '#C49B7A', '#A388C8', '#85A344']
+        )
+        fig_evol_at.update_traces(textposition='outside', cliponaxis=False)
+        fig_evol_at.update_layout(
+            legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5, font=dict(family='Plus Jakarta Sans, sans-serif', size=11, color=BRAND_PURPLE_DARK)),
+            **PLOTLY_LAYOUT
+        )
+        apply_chart_theme(fig_evol_at, top_margin=60, bottom_margin=80)
+        st.plotly_chart(fig_evol_at, use_container_width=True)
+
+        # Consolidação das modalidades de atendimento (conforme layout oficial da imagem)
+        st.markdown("#### Consolidação das modalidades de atendimento")
+        
+        categorias_excluir_modalidades = [
+            'encaminhamento formal',
+            'atendimento presencial',
+            'petição / demanda jurídica',
+            'peticao / demanda juridica',
+            'atendimento geral'
+        ]
+        df_tab = df_atend[
+            ~df_atend['categoria_modalidade'].str.lower().isin(categorias_excluir_modalidades) &
+            ~df_atend['categoria_modalidade'].str.lower().str.contains('cancel|ausên|ausen')
+        ].copy()
+        
+        df_agg = df_tab['categoria_modalidade'].value_counts().reset_index()
+        df_agg.columns = ['Modalidade de Atendimento', 'Total Realizado']
+        tot_filtrado = df_agg['Total Realizado'].sum()
+        df_agg['Proporção (%)'] = (df_agg['Total Realizado'] / tot_filtrado * 100).round(1).astype(str) + '%'
+        
+        # Média semanal calculada com base em 33 semanas úteis (165 dias úteis com atividades)
+        semanas_ref = 33.0
+        df_agg['Média Semanal'] = (df_agg['Total Realizado'] / semanas_ref).round(2).astype(str) + ' / sem'
+        
+        st.dataframe(df_agg, use_container_width=True, hide_index=True)
+
+        # Nota Oficial: Telefone e Mensagens (WhatsApp) - idêntica à imagem
         st.markdown(f"""
         <div style="background-color: #F8F6FD; border-left: 4px solid {BRAND_PURPLE}; padding: 1.15rem 1.4rem; border-radius: 10px; margin-top: 1.5rem; margin-bottom: 1.2rem;">
             <h4 style="margin: 0 0 0.5rem 0; color: {BRAND_PURPLE_DARK}; font-size: 1.05rem;">
-                📞 Atendimento por telefone e mensagens (WhatsApp)
+                📞 Acompanhamento contínuo por telefone e mensagens (WhatsApp)
             </h4>
             <p style="margin: 0 0 0.6rem 0; font-size: 0.93rem; color: #1F2937; line-height: 1.55;">
-                O período considerado compreendeu <b>150 dias úteis</b> (segunda a sexta-feira, exceto feriados), o equivalente a <b>30 semanas úteis</b>.
+                No período analisado (março a outubro de 2026), foram registrados <b>2496 atendimentos</b> distribuídos em <b>165 dias com atividades</b> (aproximadamente 33 semanas úteis).
             </p>
             <p style="margin: 0 0 0.6rem 0; font-size: 0.93rem; color: #1F2937; line-height: 1.55;">
-                Durante o período analisado, a modalidade de atendimento por telefone e mensagens de texto/áudio configurou-se como o <b>principal canal de acompanhamento contínuo e orientação célere</b> das assistidas. Foram efetuados <b>1.492 atendimentos por mensagem/telefone</b> prestados diretamente a assistidas (contabilizando 1 atendimento diário por assistida e desconsiderando múltiplos contatos com a mesma mulher no mesmo dia), alcançando <b>507 assistidas distintas</b> ao longo dos 7 meses.
+                O atendimento por telefone e mensagens de texto/áudio configurou-se como o <b>principal canal de orientação e acompanhamento individualizado</b>, respondendo por <b>2006 atendimentos</b> com uma média de <b>60.8 atendimentos por semana</b> (12.2 por dia com atendimentos).
             </p>
             <p style="margin: 0; font-size: 0.88rem; color: #4B5563; line-height: 1.5; font-style: italic; border-top: 1px dashed #D1D5DB; padding-top: 0.65rem;">
-                <b>Nota metodológica sobre a variação entre formulários e atendimentos por mensagem:</b> Enquanto os 474 formulários recebidos representam a porta de entrada formal e o cadastramento de novos casos no serviço, o volume de atendimentos por mensagem e telefone reflete a dinâmica de acompanhamento contínuo das demandas. Um único caso iniciado via formulário gera múltiplos atendimentos e retornos por mensagem ao longo dos meses. Além disso, o canal de mensagens acolhe contatos de retorno de assistidas cadastradas em períodos anteriores ou orientações céleres que antecedem/complementam a formalização da triagem.
+                <b>Dinâmica entre formulários e atendimentos continuados:</b> Os formulários de acolhimento representam a porta de entrada formal para novos casos no serviço. A partir dessa entrada, cada assistida gera múltiplos atendimentos de retorno e acompanhamento ao longo dos meses por telefone, WhatsApp e vídeo.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-        # Nota Oficial: Demanda por Vídeo
+        # Nota Oficial: Demanda por Vídeo - idêntica à imagem
         st.markdown(f"""
         <div style="background-color: #F0FDF4; border-left: 4px solid {BRAND_GREEN}; padding: 1.05rem 1.3rem; border-radius: 10px; margin-top: 0.5rem; margin-bottom: 1.5rem;">
             <h4 style="margin: 0 0 0.45rem 0; color: {BRAND_GREEN_DARK}; font-size: 1.0rem;">
-                📹 Atendimentos por vídeo (somente com comparecimento)
+                📹 Atendimentos individualizados por vídeo
             </h4>
             <p style="margin: 0; font-size: 0.92rem; color: #1F2937; line-height: 1.55;">
-                <b>Nota sobre a demanda por vídeo:</b> A demanda por atendimentos por vídeo apresenta grande intensidade e constância no serviço: no período analisado, foram realizados <b>235 atendimentos efetivos por vídeo</b>, distribuídos ao longo de <b>112 dias úteis</b> (presente em 74,7% de todos os dias úteis de funcionamento). Nos dias em que a modalidade é realizada, a média é de <b>2,10 atendimentos por dia</b>, alcançando picos de até 6 mulheres atendidas por videochamada em um mesmo dia, o que representa uma média semanal de <b>7,83 atendimentos por vídeo</b>.
+                Foram realizadas <b>299 sessões por vídeo com comparecimento efetivo</b>, realizadas ao longo de <b>134 dias</b>, representando uma média de <b>9.1 sessões por semana</b> (2.2 sessões por dia em que a modalidade ocorreu).
             </p>
         </div>
         """, unsafe_allow_html=True)
-
-        # Tabela Demonstrativa Oficial das Modalidades (CEDEM)
-        st.markdown("#### Consolidação oficial das modalidades de atendimento (CEDEM)")
-        df_tab_atend = pd.DataFrame([
-            {"Modalidade de Atendimento": "Atendimentos por telefone / WhatsApp a assistidas (atendimentos diários únicos)", "Total Efetuado": 1492, "Média Semanal": "49,73 / semana", "Detalhamento": "507 assistidas distintas acolhidas"},
-            {"Modalidade de Atendimento": "Atendimentos por vídeo (com comparecimento)", "Total Efetuado": 235, "Média Semanal": "7,83 / semana", "Detalhamento": "Realizados em 112 dias úteis (média 2,10/dia)"},
-            {"Modalidade de Atendimento": "Atendimentos / Contatos telefônicos institucionais e de rede", "Total Efetuado": 20, "Média Semanal": "0,67 / semana", "Detalhamento": "Articulação com CRAS, CREAS, Fóruns e rede de proteção"},
-            {"Modalidade de Atendimento": "Atendimentos por e-mail", "Total Efetuado": 25, "Média Semanal": "0,83 / semana", "Detalhamento": "Orientações formais e envio de documentos"},
-            {"Modalidade de Atendimento": "Outros atos / registros de contato na planilha", "Total Efetuado": 125, "Média Semanal": "4,17 / semana", "Detalhamento": "Retornos, diligências e registros administrativos"},
-            {"Modalidade de Atendimento": "Total geral de atendimentos efetivos", "Total Efetuado": 1897, "Média Semanal": "63,23 / semana", "Detalhamento": "Consolidado ao longo de 150 dias úteis (30 semanas úteis)"}
-        ])
-        st.dataframe(df_tab_atend, use_container_width=True, hide_index=True)
     else:
         st.info("Nenhum dado de atendimento encontrado para os filtros selecionados.")
 
@@ -465,7 +510,7 @@ with tabs[2]:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Gráfico 1: Evolução Mensal de Petições
-        meses_ordem_nomes = ['Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro']
+        meses_ordem_nomes = ['Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro']
         df_pt_mes = df_pet['mes_nome'].value_counts().reindex(meses_ordem_nomes).fillna(0).reset_index()
         df_pt_mes.columns = ['Mês', 'Petições']
         fig_pt_mes = px.bar(
@@ -597,21 +642,43 @@ with tabs[4]:
     st.markdown("### Distribuição geográfica em Santa Catarina")
     
     if not df.empty:
-        col_geo1, col_geo2 = st.columns([1, 1])
+        df_cities_all = df[df['municipio'] != 'Não informado']['municipio'].value_counts().reset_index()
+        df_cities_all.columns = ['Município', 'Total']
+        tot_cities_cases = df_cities_all['Total'].sum()
+        df_cities_all['Porcentagem'] = (df_cities_all['Total'] / tot_cities_cases * 100).round(1) if tot_cities_cases > 0 else 0
+        df_cities_all['Texto'] = df_cities_all.apply(lambda r: f"{r['Total']} ({r['Porcentagem']}%)", axis=1)
+
+        view_qtd = st.radio(
+            "Visualização do ranking gráfico:",
+            ["Todos os municípios", "Top 15", "Top 30"],
+            horizontal=True
+        )
         
+        if view_qtd == "Top 15":
+            df_chart_cities = df_cities_all.head(15)
+            chart_h = 500
+        elif view_qtd == "Top 30":
+            df_chart_cities = df_cities_all.head(30)
+            chart_h = 750
+        else:
+            df_chart_cities = df_cities_all
+            chart_h = max(550, len(df_chart_cities) * 22)
+
+        col_geo1, col_geo2 = st.columns([1, 1])
         with col_geo1:
-            df_cities = df['municipio'].value_counts().head(15).reset_index()
-            df_cities.columns = ['Município', 'Total']
-            if not df_cities.empty:
-                fig_top_cities = px.bar(
-                    df_cities, x='Total', y='Município', orientation='h',
-                    text='Total', title="Top 15 municípios com mais solicitações",
-                    color='Total', color_continuous_scale=PURPLE_SCALE
-                )
-                fig_top_cities.update_traces(textposition='outside', cliponaxis=False)
-                fig_top_cities.update_layout(yaxis={'autorange': 'reversed', 'automargin': True}, **PLOTLY_LAYOUT)
-                apply_chart_theme(fig_top_cities, left_margin=180)
-                st.plotly_chart(fig_top_cities, use_container_width=True)
+            fig_top_cities = px.bar(
+                df_chart_cities, x='Total', y='Município', orientation='h',
+                text='Texto', title=f"Municípios com solicitações ({view_qtd})",
+                color='Total', color_continuous_scale=PURPLE_SCALE
+            )
+            fig_top_cities.update_traces(textposition='outside', cliponaxis=False)
+            fig_top_cities.update_layout(
+                yaxis={'autorange': 'reversed', 'automargin': True},
+                height=chart_h,
+                **PLOTLY_LAYOUT
+            )
+            apply_chart_theme(fig_top_cities, left_margin=180)
+            st.plotly_chart(fig_top_cities, use_container_width=True)
             
         with col_geo2:
             df_regiao = df['regiao_sc'].value_counts().reset_index()
@@ -622,10 +689,34 @@ with tabs[4]:
                     title="Distribuição por mesorregiões de Santa Catarina",
                     color_discrete_sequence=COLOR_PALETTE
                 )
-                fig_regiao.update_traces(textinfo='percent+label')
-                fig_regiao.update_layout(**PLOTLY_LAYOUT)
-                apply_chart_theme(fig_regiao)
+                fig_regiao.update_traces(
+                    textinfo='percent',
+                    textposition='inside',
+                    insidetextorientation='radial',
+                    hovertemplate="<b>%{label}</b><br>Total: %{value} solicitações<br>Proporção: %{percent}<extra></extra>"
+                )
+                fig_regiao.update_layout(
+                    legend=dict(
+                        orientation="h",
+                        yanchor="top",
+                        y=-0.12,
+                        xanchor="center",
+                        x=0.5,
+                        font=dict(family='Plus Jakarta Sans, sans-serif', size=11, color=BRAND_PURPLE_DARK)
+                    ),
+                    **PLOTLY_LAYOUT
+                )
+                apply_chart_theme(fig_regiao, bottom_margin=100)
                 st.plotly_chart(fig_regiao, use_container_width=True)
+
+        st.markdown(f"#### Lista completa de todos os {len(df_cities_all)} municípios atendidos")
+        df_table = df_cities_all.copy()
+        df_table.insert(0, 'Posição', [f"{i+1}º" for i in range(len(df_table))])
+        df_table['Mesorregião SC'] = df_table['Município'].apply(lambda m: CITIES_DB.get(m, {}).get('regiao', 'Não identificada'))
+        df_table['Proporção (%)'] = df_table['Porcentagem'].astype(str) + '%'
+        df_table = df_table[['Posição', 'Município', 'Total', 'Proporção (%)', 'Mesorregião SC']]
+        df_table.columns = ['Posição', 'Município', 'Total de Solicitações', 'Proporção (%)', 'Mesorregião']
+        st.dataframe(df_table, use_container_width=True, hide_index=True)
             
         st.markdown("#### Mapa de concentração territorial")
         df_geo = df.dropna(subset=['lat', 'lon']).groupby(['municipio', 'lat', 'lon', 'regiao_sc']).size().reset_index(name='Formulários')
@@ -779,18 +870,22 @@ with tabs[6]:
     st.markdown("### Origem do acesso e encaminhamentos")
     
     if not df.empty:
+        df_canal = df['canal_origem'].value_counts().reset_index()
+        df_canal.columns = ['Canal de Acesso', 'Total']
+        tot_canal = df_canal['Total'].sum()
+        df_canal['Porcentagem'] = (df_canal['Total'] / tot_canal * 100).round(1) if tot_canal > 0 else 0
+        df_canal['Texto'] = df_canal.apply(lambda r: f"{r['Total']} ({r['Porcentagem']}%)", axis=1)
+
         col_c1, col_c2 = st.columns(2)
         with col_c1:
-            df_canal = df['canal_origem'].value_counts().reset_index()
-            df_canal.columns = ['Canal de Acesso', 'Total']
             fig_canal = px.bar(
                 df_canal, x='Total', y='Canal de Acesso', orientation='h',
-                text='Total', title="Principais portas de entrada / encaminhamentos",
+                text='Texto', title="Volume de solicitações por porta de entrada",
                 color='Total', color_continuous_scale=GREEN_SCALE
             )
             fig_canal.update_traces(textposition='outside', cliponaxis=False)
             fig_canal.update_layout(yaxis={'autorange': 'reversed', 'automargin': True}, **PLOTLY_LAYOUT)
-            apply_chart_theme(fig_canal, left_margin=170)
+            apply_chart_theme(fig_canal, left_margin=260)
             st.plotly_chart(fig_canal, use_container_width=True)
             
         with col_c2:
@@ -799,99 +894,32 @@ with tabs[6]:
                 title="Proporção dos canais de encaminhamento",
                 color_discrete_sequence=COLOR_PALETTE
             )
-            fig_canal_pie.update_traces(textinfo='percent+label')
-            fig_canal_pie.update_layout(**PLOTLY_LAYOUT)
-            apply_chart_theme(fig_canal_pie)
+            fig_canal_pie.update_traces(
+                textinfo='percent',
+                textposition='inside',
+                insidetextorientation='radial',
+                hovertemplate="<b>%{label}</b><br>Total: %{value} mulheres<br>Proporção: %{percent}<extra></extra>"
+            )
+            fig_canal_pie.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="top",
+                    y=-0.12,
+                    xanchor="center",
+                    x=0.5,
+                    font=dict(family='Plus Jakarta Sans, sans-serif', size=11, color=BRAND_PURPLE_DARK)
+                ),
+                **PLOTLY_LAYOUT
+            )
+            apply_chart_theme(fig_canal_pie, bottom_margin=120)
             st.plotly_chart(fig_canal_pie, use_container_width=True)
+            
+        st.markdown("#### Detalhamento das portas de entrada e encaminhamentos")
+        df_canal_tab = df_canal[['Canal de Acesso', 'Total', 'Porcentagem']].copy()
+        df_canal_tab['Proporção (%)'] = df_canal_tab['Porcentagem'].astype(str) + '%'
+        df_canal_tab = df_canal_tab[['Canal de Acesso', 'Total', 'Proporção (%)']]
+        st.dataframe(df_canal_tab, use_container_width=True, hide_index=True)
     else:
         st.info("Nenhum dado de canais de acesso encontrado para os filtros selecionados.")
 
-# ==========================================
-# ABA 8: EXPLORADOR DE DADOS & EXPORTAÇÃO
-# ==========================================
-with tabs[7]:
-    st.markdown("### Tabela de dados e exportação de relatórios")
-    
-    base_selecionada = st.radio(
-        "Selecione a base de dados para visualização e exportação:",
-        ["Formulários de acolhimento", "Atendimentos (telefone & vídeo)", "Petições judiciais (CEDEM)"],
-        horizontal=True
-    )
-    
-    if base_selecionada == "Formulários de acolhimento":
-        cols_display = [
-            'data_hora', 'faixa_etaria', 'estado_civil',
-            'raca_cor', 'identidade_genero', 'municipio', 'regiao_sc',
-            'tipo_area', 'violencias_rotulo', 'perfil_agressor_rotulo', 'canal_origem', 'relato_fatos'
-        ]
-        rename_dict = {
-            'data_hora': 'Data/Hora Envio',
-            'faixa_etaria': 'Faixa Etária',
-            'estado_civil': 'Estado Civil',
-            'raca_cor': 'Raça/Cor',
-            'identidade_genero': 'Gênero',
-            'municipio': 'Município',
-            'regiao_sc': 'Mesorregião SC',
-            'tipo_area': 'Zona',
-            'violencias_rotulo': 'Tipos de Violência (5 Tipos)',
-            'perfil_agressor_rotulo': 'Perfil do Agressor',
-            'canal_origem': 'Canal de Entrada',
-            'relato_fatos': 'Relato dos Fatos'
-        }
-        df_export = df[cols_display].rename(columns=rename_dict) if not df.empty else pd.DataFrame()
-        sheet_name_exp = "Formularios"
-        file_prefix = "formularios"
-        
-    elif base_selecionada == "Atendimentos (telefone & vídeo)":
-        cols_atend = ['data_apenas', 'dia_semana', 'categoria_modalidade', 'mes_ano']
-        rename_atend = {
-            'data_apenas': 'Data do Atendimento',
-            'dia_semana': 'Dia da Semana',
-            'categoria_modalidade': 'Modalidade',
-            'mes_ano': 'Mês/Ano'
-        }
-        df_export = df_atend[cols_atend].rename(columns=rename_atend) if not df_atend.empty else pd.DataFrame()
-        sheet_name_exp = "Atendimentos"
-        file_prefix = "atendimentos"
-        
-    else: # Petições
-        cols_pet = ['mes_nome', 'tipo_peticao', 'categoria_peticao', 'data_protocolo']
-        rename_pet = {
-            'mes_nome': 'Mês',
-            'tipo_peticao': 'Tipo de Petição',
-            'categoria_peticao': 'Categoria',
-            'data_protocolo': 'Data do Protocolo'
-        }
-        df_export = df_pet[cols_pet].rename(columns=rename_pet) if not df_pet.empty else pd.DataFrame()
-        sheet_name_exp = "Peticoes"
-        file_prefix = "peticoes"
-        
-    st.dataframe(df_export, use_container_width=True, hide_index=True)
-    
-    st.markdown("#### Exportar dados da base selecionada")
-    col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 2])
-    
-    if not df_export.empty:
-        buffer_excel = io.BytesIO()
-        with pd.ExcelWriter(buffer_excel, engine='openpyxl') as writer:
-            df_export.to_excel(writer, index=False, sheet_name=sheet_name_exp)
-        buffer_excel.seek(0)
-        
-        with col_exp1:
-            st.download_button(
-                label=f"Baixar Excel ({sheet_name_exp})",
-                data=buffer_excel,
-                file_name=f"{file_prefix}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-            
-        csv_data = df_export.to_csv(index=False, encoding='utf-8-sig')
-        with col_exp2:
-            st.download_button(
-                label=f"Baixar CSV ({sheet_name_exp})",
-                data=csv_data,
-                file_name=f"{file_prefix}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
+

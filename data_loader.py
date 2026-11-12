@@ -15,8 +15,8 @@ import numpy as np
 from datetime import datetime
 
 # Data de corte do painel: nenhum registro após esta data deve ser exibido
-# (o painel considera atendimentos/formulários até 30/09/2026)
-DATA_CUTOFF = pd.Timestamp('2026-09-30 23:59:59')
+# (o painel considera atendimentos/formulários até 31/10/2026)
+DATA_CUTOFF = pd.Timestamp('2026-10-31 23:59:59')
 
 # Coordenadas e Regiões de Municípios de Santa Catarina e Principais Cidades
 CITIES_DB = {
@@ -99,6 +99,7 @@ CITIES_DB = {
     'Siderópolis': {'lat': -28.5981, 'lon': -49.4242, 'regiao': 'Sul Catarinense'},
     'Morro da Fumaça': {'lat': -28.6508, 'lon': -49.2131, 'regiao': 'Sul Catarinense'},
     'Balneário Arroio do Silva': {'lat': -28.9839, 'lon': -49.4189, 'regiao': 'Sul Catarinense'},
+    'Balneário Rincão': {'lat': -28.8317, 'lon': -49.2350, 'regiao': 'Sul Catarinense'},
     
     'Lages': {'lat': -27.8158, 'lon': -50.3261, 'regiao': 'Serrana'},
     'Curitibanos': {'lat': -27.2831, 'lon': -50.5842, 'regiao': 'Serrana'},
@@ -107,6 +108,7 @@ CITIES_DB = {
     'Otacílio Costa': {'lat': -27.4819, 'lon': -50.1214, 'regiao': 'Serrana'},
     'Urupema': {'lat': -27.9558, 'lon': -49.8758, 'regiao': 'Serrana'},
     'Urubici': {'lat': -28.0150, 'lon': -49.5917, 'regiao': 'Serrana'},
+    'Anita Garibaldi': {'lat': -27.6936, 'lon': -51.1908, 'regiao': 'Serrana'},
     
     'Chapecó': {'lat': -27.1008, 'lon': -52.6153, 'regiao': 'Oeste Catarinense'},
     'Concórdia': {'lat': -27.2336, 'lon': -52.0231, 'regiao': 'Oeste Catarinense'},
@@ -128,11 +130,13 @@ CITIES_DB = {
     'Mondaí': {'lat': -27.1064, 'lon': -53.4008, 'regiao': 'Oeste Catarinense'},
     'Quilombo': {'lat': -26.7289, 'lon': -52.7231, 'regiao': 'Oeste Catarinense'},
     'Paraíso': {'lat': -26.6158, 'lon': -53.6706, 'regiao': 'Oeste Catarinense'},
+    'Jupiá': {'lat': -26.3986, 'lon': -52.7236, 'regiao': 'Oeste Catarinense'},
     
     'Curitiba': {'lat': -25.4284, 'lon': -49.2733, 'regiao': 'Outro Estado (PR)'},
     'Campo Largo': {'lat': -25.4597, 'lon': -49.5275, 'regiao': 'Outro Estado (PR)'},
     'São Paulo': {'lat': -23.5505, 'lon': -46.6333, 'regiao': 'Outro Estado (SP)'},
     'Porto Alegre': {'lat': -30.0346, 'lon': -51.2177, 'regiao': 'Outro Estado (RS)'},
+    'Manaus': {'lat': -3.1190, 'lon': -60.0217, 'regiao': 'Outro Estado (AM)'},
 }
 
 def remove_accents(text):
@@ -265,6 +269,11 @@ def normalize_city(raw_name):
         'campo largo': 'Campo Largo',
         'porto alegre': 'Porto Alegre',
         'sao paulo': 'São Paulo',
+        'anita garibaldi': 'Anita Garibaldi',
+        'balneario rincao': 'Balneário Rincão',
+        'rincao': 'Balneário Rincão',
+        'jupia': 'Jupiá',
+        'manaus': 'Manaus',
     }
     
     for key, std_name in sorted(synonyms.items(), key=lambda x: len(x[0]), reverse=True):
@@ -906,7 +915,7 @@ def load_peticoes_from_excel(file_source, filename='Planilha'):
         df_raw = df_raw.dropna(subset=[df_raw.columns[0], df_raw.columns[1]], how='all')
         
         df = pd.DataFrame()
-        df['mes_nome'] = df_raw.iloc[:, 0].astype(str).str.strip()
+        df['mes_nome'] = df_raw.iloc[:, 0].astype(str).str.strip().str.capitalize()
         df['tipo_peticao'] = df_raw.iloc[:, 1].astype(str).str.strip()
         df['data_protocolo'] = pd.to_datetime(df_raw.iloc[:, 3], errors='coerce') if df_raw.shape[1] > 3 else pd.NaT
         
@@ -920,7 +929,9 @@ def load_peticoes_from_excel(file_source, filename='Planilha'):
             'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7,
             'agosto': 8, 'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
         }
-        df['mes_num'] = df['mes_nome'].apply(lambda m: meses_ordem.get(remove_accents(str(m)), 0))
+        df['mes_num'] = df['mes_nome'].apply(lambda m: meses_ordem.get(remove_accents(str(m)).lower(), 0))
+        if DATA_CUTOFF is not None:
+            df = df[df['mes_num'] <= DATA_CUTOFF.month].copy()
         df['mes_ano'] = df.apply(
             lambda r: f"2026-{r['mes_num']:02d}" if r['mes_num'] > 0 else "2026-N/D", axis=1
         )
