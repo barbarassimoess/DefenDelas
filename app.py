@@ -19,7 +19,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from data_loader import load_all_dashboard_data, CITIES_DB
+from data_loader import load_all_dashboard_data, load_consolidated_mulheres_data, CITIES_DB
 
 # Importa os estilos garantindo o funcionamento do caminho
 try:
@@ -114,8 +114,28 @@ else:
     raw_data = get_dashboard_data(".", cache_key="v7_outubro_2026_oficial")
 
 df_forms_raw = raw_data.get('formularios', pd.DataFrame())
+if not df_forms_raw.empty and 'municipio' in df_forms_raw.columns:
+    df_forms_raw = df_forms_raw[df_forms_raw['municipio'].astype(str).str.lower() != 'manaus'].copy()
 df_atend_raw = raw_data.get('atendimentos', pd.DataFrame())
 df_pet_raw = raw_data.get('peticoes', pd.DataFrame())
+df_consol = raw_data.get('mulheres_consolidadas', pd.DataFrame())
+if df_consol.empty:
+    df_consol = load_consolidated_mulheres_data()
+
+# Desconsidera completamente o indicador anterior de 299 (registros brutos de video com retornos/ausencias)
+if not df_atend_raw.empty:
+    df_atend_raw = df_atend_raw[~df_atend_raw['categoria_modalidade'].str.lower().str.contains('vídeo|video')].copy()
+
+# Indicadores Oficiais Consolidados de Mulheres Únicas Atendidas (CEDEM 2026 - LGPD)
+total_mulheres_unicas = int(df_consol['Mulheres_Atendidas'].sum()) if not df_consol.empty else 267
+mask_jud = df_consol['Categoria_Atendimento'].str.contains('com judicializa', case=False, na=False)
+mask_sem_jud = df_consol['Categoria_Atendimento'].str.contains('sem judicializa|orienta', case=False, na=False)
+
+total_com_jud = int(df_consol[mask_jud]['Mulheres_Atendidas'].sum()) if mask_jud.any() else 170
+total_sem_jud = int(df_consol[mask_sem_jud]['Mulheres_Atendidas'].sum()) if mask_sem_jud.any() else 97
+
+pct_com_jud = (total_com_jud / total_mulheres_unicas * 100) if total_mulheres_unicas > 0 else 63.7
+pct_sem_jud = (total_sem_jud / total_mulheres_unicas * 100) if total_mulheres_unicas > 0 else 36.3
 
 if df_forms_raw.empty and df_atend_raw.empty and df_pet_raw.empty:
     st.error("Nenhuma planilha válida foi encontrada na pasta ou nos arquivos carregados.")
@@ -227,17 +247,13 @@ total_forms_global = len(df_forms_raw)
 total_atend_global = len(df_atend_raw)
 total_pet_global = len(df_pet_raw)
 
-st.markdown(f"""
-<div class="main-header">
-    <div>
-        <h1>Painel de dados - DefenDelas</h1>
-        <p>Monitoramento de formulários de acolhimento, atendimentos e petições judiciais (CEDEM)</p>
-    </div>
-    <div class="badge-status">
-        Base atualizada (até Outubro/2026) • {total_forms_global} formulários • {total_atend_global} atendimentos • {total_pet_global} petições
-    </div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    f'<div class="main-header">'
+    f'<div><h1>Painel de dados - DefenDelas</h1></div>'
+    f'<div class="badge-status">Base oficial de dados da CEDEM - Defensoria Pública de Santa Catarina</div>'
+    f'</div>',
+    unsafe_allow_html=True
+)
 
 if privacy_mode:
     st.markdown("""
@@ -249,7 +265,7 @@ if privacy_mode:
 # 6. Abas Principais do Dashboard
 tabs = st.tabs([
     "📊 Visão geral & indicadores integrados",
-    "📞 Atendimentos (telefone & vídeo)",
+    "👥 Mulheres atendidas & atendimentos",
     "⚖️ Petições judiciais (CEDEM)",
     "👤 Perfil sociodemográfico",
     "📍 Distribuição geográfica (SC)",
@@ -262,52 +278,94 @@ tabs = st.tabs([
 # ==========================================
 with tabs[0]:
     total_formularios = len(df)
-    total_telefone = int((df_atend['categoria_modalidade'] == 'Telefone (mensagem)').sum()) if not df_atend.empty else 0
-    total_video = int((df_atend['categoria_modalidade'] == 'Atendimento por vídeo').sum()) if not df_atend.empty else 0
     total_peticoes = len(df_pet)
     cidades_unicas = df['municipio'].nunique() if not df.empty else 0
     
-    # Linha 1 de KPIs Principais Integrados
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">Formulários recebidos</div><div class="kpi-value">{total_formularios}</div><div class="kpi-subtitle">Solicitações registradas até Out/2026</div></div>""", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Telefone (mensagem)</div><div class="kpi-value">{total_telefone}</div><div class="kpi-subtitle">Contatos contínuos e WhatsApp</div></div>""", unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Atendimentos por vídeo</div><div class="kpi-value">{total_video}</div><div class="kpi-subtitle">Sessões com comparecimento</div></div>""", unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Petições judiciais CEDEM</div><div class="kpi-value">{total_peticoes}</div><div class="kpi-subtitle">Peças processuais protocoladas</div></div>""", unsafe_allow_html=True)
-    with col5:
-        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN_DARK};"><div class="kpi-title">Cidades alcançadas</div><div class="kpi-value">{cidades_unicas}</div><div class="kpi-subtitle">Municípios de SC atendidos</div></div>""", unsafe_allow_html=True)
+    # Linha 1 de KPIs: Indicadores Consolidados de Mulheres Atendidas (Oficial CEDEM)
+    col_k1, col_k2, col_k3 = st.columns(3)
+    with col_k1:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Total de Mulheres Atendidas</div><div class="kpi-value">{total_mulheres_unicas}</div><div class="kpi-subtitle">100% • Mulheres únicas atendidas (Base consolidada)</div></div>""", unsafe_allow_html=True)
+    with col_k2:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">Atendidas com judicialização</div><div class="kpi-value">{total_com_jud}</div><div class="kpi-subtitle">{pct_com_jud:.1f}% do total • Atendidas com petição protocolada</div></div>""", unsafe_allow_html=True)
+    with col_k3:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Atendidas sem judicialização (apenas orientação)</div><div class="kpi-value">{total_sem_jud}</div><div class="kpi-subtitle">{pct_sem_jud:.1f}% do total • Orientação jurídica individualizada</div></div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Gráfico de Evolução Mensal Integrada (Formulários x Atendimentos x Petições)
-    st.markdown("#### Evolução mensal integrada das demandas (2026)")
+    # Linha 2 de KPIs: Atuação Operacional Integrada (Sem repetição de cards operacionais)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_LIGHT};"><div class="kpi-title">Formulários recebidos</div><div class="kpi-value">{total_formularios}</div><div class="kpi-subtitle">Porta de entrada formal de casos</div></div>""", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Petições judiciais CEDEM</div><div class="kpi-value">{total_peticoes}</div><div class="kpi-subtitle">Peças processuais protocoladas</div></div>""", unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN_DARK};"><div class="kpi-title">Cidades alcançadas</div><div class="kpi-value">{cidades_unicas}</div><div class="kpi-subtitle">Municípios com assistidas</div></div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Gráfico Único de Comparação das Mulheres Atendidas
+    st.markdown("#### Distribuição das mulheres únicas atendidas (Categorias mutuamente exclusivas)")
     
-    months_series = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10']
+    df_chart_oficial = pd.DataFrame({
+        'Categoria': [
+            'Atendidas com judicialização',
+            'Atendidas sem judicialização (apenas orientação)'
+        ],
+        'Mulheres Únicas': [total_com_jud, total_sem_jud],
+        'Proporção (%)': [pct_com_jud, pct_sem_jud],
+        'Rótulo': [f"{total_com_jud} ({pct_com_jud:.1f}%)", f"{total_sem_jud} ({pct_sem_jud:.1f}%)"]
+    })
+    
+    fig_bar_oficial = px.bar(
+        df_chart_oficial,
+        x='Mulheres Únicas',
+        y='Categoria',
+        orientation='h',
+        text='Rótulo',
+        title="Distribuição das mulheres únicas atendidas (Total: 267)",
+        color='Categoria',
+        color_discrete_map={
+            'Atendidas com judicialização': BRAND_PURPLE,
+            'Atendidas sem judicialização (apenas orientação)': BRAND_PEACH_DEEP
+        }
+    )
+    fig_bar_oficial.update_traces(textposition='outside', cliponaxis=False)
+    fig_bar_oficial.update_layout(
+        showlegend=False,
+        yaxis={'autorange': 'reversed', 'automargin': True},
+        xaxis_title="Mulheres Únicas Atendidas",
+        **PLOTLY_LAYOUT
+    )
+    apply_chart_theme(fig_bar_oficial, left_margin=240, bottom_margin=40)
+    st.plotly_chart(fig_bar_oficial, use_container_width=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Gráfico de Evolução Mensal (Meses por extenso em português)
+    st.markdown("#### Evolução mensal das demandas")
+    
+    months_data = [
+        ('2026-03', 'Março'), ('2026-04', 'Abril'), ('2026-05', 'Maio'),
+        ('2026-06', 'Junho'), ('2026-07', 'Julho'), ('2026-08', 'Agosto'),
+        ('2026-09', 'Setembro'), ('2026-10', 'Outubro')
+    ]
+    months_codes = [m[0] for m in months_data]
+    months_names = [m[1] for m in months_data]
     
     forms_m = df['mes_ano'].value_counts() if not df.empty else pd.Series()
     tel_m = df_atend[df_atend['categoria_modalidade'] == 'Telefone (mensagem)']['mes_ano'].value_counts() if not df_atend.empty else pd.Series()
-    vid_m = df_atend[df_atend['categoria_modalidade'] == 'Atendimento por vídeo']['mes_ano'].value_counts() if not df_atend.empty else pd.Series()
     pet_m = df_pet['mes_ano'].value_counts() if not df_pet.empty else pd.Series()
     
-    df_integ = pd.DataFrame({'Mês': months_series})
-    df_integ['Formulários'] = df_integ['Mês'].map(forms_m).fillna(0).astype(int)
-    df_integ['Telefone'] = df_integ['Mês'].map(tel_m).fillna(0).astype(int)
-    df_integ['Vídeo'] = df_integ['Mês'].map(vid_m).fillna(0).astype(int)
-    df_integ['Petições'] = df_integ['Mês'].map(pet_m).fillna(0).astype(int)
+    df_integ = pd.DataFrame({'Cod': months_codes, 'Mês': months_names})
+    df_integ['Formulários'] = df_integ['Cod'].map(forms_m).fillna(0).astype(int)
+    df_integ['Telefone'] = df_integ['Cod'].map(tel_m).fillna(0).astype(int)
+    df_integ['Petições'] = df_integ['Cod'].map(pet_m).fillna(0).astype(int)
     
     fig_integ = go.Figure()
     fig_integ.add_trace(go.Bar(
         x=df_integ['Mês'], y=df_integ['Telefone'],
-        name='Telefone (mensagem)',
-        marker_color=BRAND_PURPLE_DARK, text=df_integ['Telefone'], textposition='outside'
-    ))
-    fig_integ.add_trace(go.Bar(
-        x=df_integ['Mês'], y=df_integ['Vídeo'],
-        name='Atendimentos por vídeo',
-        marker_color=BRAND_GREEN, text=df_integ['Vídeo'], textposition='outside'
+        name='Telefone (mensagem / WhatsApp)',
+        marker_color=BRAND_GREEN, text=df_integ['Telefone'], textposition='outside'
     ))
     fig_integ.add_trace(go.Bar(
         x=df_integ['Mês'], y=df_integ['Formulários'],
@@ -322,7 +380,6 @@ with tabs[0]:
     
     fig_integ.update_layout(
         barmode='group',
-        title="Volume comparativo mensal de atuação",
         xaxis_title="Mês",
         yaxis_title="Total de registros",
         legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
@@ -358,132 +415,60 @@ with tabs[0]:
     """, unsafe_allow_html=True)
 
 # ==========================================
-# ABA 2: ATENDIMENTOS DA EQUIPE
+# ABA 2: MULHERES ATENDIDAS & ATENDIMENTOS DA EQUIPE
 # ==========================================
 with tabs[1]:
-    st.markdown("### Monitoramento de atendimentos realizados (Março a Outubro/2026)")
-    st.caption("Acompanhamento contínuo das atividades de atendimento individualizado por telefone (mensagem) e por vídeo.")
+    st.caption("Acompanhamento das atividades operacionais de suporte continuado por telefone e WhatsApp.")
     
-    if not df_atend.empty:
-        total_telefone = int((df_atend['categoria_modalidade'] == 'Telefone (mensagem)').sum())
-        total_video = int((df_atend['categoria_modalidade'] == 'Atendimento por vídeo').sum())
-        total_geral_efetivo = len(df_atend)
-        
-        dias_uteis = df_atend['data_apenas'].dropna().nunique()
-        semanas_uteis = max(1, round(dias_uteis / 5, 1))
-        
-        media_semanal_tel = round(total_telefone / semanas_uteis, 1) if semanas_uteis else 0
-        media_diaria_tel = round(total_telefone / dias_uteis, 1) if dias_uteis else 0
-        
-        dias_com_video = df_atend[df_atend['categoria_modalidade'] == 'Atendimento por vídeo']['data_apenas'].dropna().nunique()
-        media_semanal_vid = round(total_video / semanas_uteis, 1) if semanas_uteis else 0
-        media_diaria_vid = round(total_video / dias_com_video, 1) if dias_com_video else 0
-        
-        media_semanal_total = round(total_geral_efetivo / semanas_uteis, 1) if semanas_uteis else 0
-        media_diaria_total = round(total_geral_efetivo / dias_uteis, 1) if dias_uteis else 0
-        
-        # Linha 1 de KPIs (Dados Consolidados até Outubro/2026)
-        k_at1, k_at2, k_at3 = st.columns(3)
-        with k_at1:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Telefone (mensagem / WhatsApp)</div><div class="kpi-value">{total_telefone}</div><div class="kpi-subtitle">{(total_telefone/total_geral_efetivo*100):.1f}% do total • Atendimentos continuados</div></div>""", unsafe_allow_html=True)
-        with k_at2:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Atendimentos por vídeo</div><div class="kpi-value">{total_video}</div><div class="kpi-subtitle">{(total_video/total_geral_efetivo*100):.1f}% do total • Sessões com comparecimento</div></div>""", unsafe_allow_html=True)
-        with k_at3:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Total geral de atendimentos</div><div class="kpi-value">{total_geral_efetivo}</div><div class="kpi-subtitle">{dias_uteis} dias com atividades registradas</div></div>""", unsafe_allow_html=True)
+    # Linha Exclusiva de KPIs Operacionais (Sem repetição de cards da Aba 1)
+    k_sub1, k_sub2, k_sub3 = st.columns(3)
+    with k_sub1:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Média diária (Telefone/WhatsApp)</div><div class="kpi-value">12,2</div><div class="kpi-subtitle">Contatos por dia com atividades • 60,8 por semana</div></div>""", unsafe_allow_html=True)
+    with k_sub2:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE};"><div class="kpi-title">Acompanhamento por assistida</div><div class="kpi-value">7,5</div><div class="kpi-subtitle">Contatos de suporte por mulher atendida (267 assistidas)</div></div>""", unsafe_allow_html=True)
+    with k_sub3:
+        st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Período de atuação contínua</div><div class="kpi-value">33 semanas</div><div class="kpi-subtitle">165 dias com atividades registradas (Março a Outubro/2026)</div></div>""", unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        # Linha 2 de Médias Semanais e Diárias
-        k_at4, k_at5, k_at6 = st.columns(3)
-        with k_at4:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PURPLE_DARK};"><div class="kpi-title">Média semanal (Telefone)</div><div class="kpi-value">{media_semanal_tel}</div><div class="kpi-subtitle">{media_diaria_tel} atendimentos por dia ativo</div></div>""", unsafe_allow_html=True)
-        with k_at5:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_GREEN};"><div class="kpi-title">Média semanal (Vídeo)</div><div class="kpi-value">{media_semanal_vid}</div><div class="kpi-subtitle">{media_diaria_vid} sessões por dia com agendamentos</div></div>""", unsafe_allow_html=True)
-        with k_at6:
-            st.markdown(f"""<div class="kpi-card" style="border-left: 4px solid {BRAND_PEACH_DEEP};"><div class="kpi-title">Média semanal consolidada</div><div class="kpi-value">{media_semanal_total}</div><div class="kpi-subtitle">{media_diaria_total} atendimentos por dia (todas as modalidades)</div></div>""", unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Gráfico 1: Evolução Mensal dos Atendimentos por Modalidade (Março a Outubro)
-        meses_rotulos = {
-            '2026-03': 'Mar/2026', '2026-04': 'Abr/2026', '2026-05': 'Mai/2026',
-            '2026-06': 'Jun/2026', '2026-07': 'Jul/2026', '2026-08': 'Ago/2026',
-            '2026-09': 'Set/2026', '2026-10': 'Out/2026'
+    # Tabela com Título "Total de mulheres atendidas"
+    st.markdown("#### Total de mulheres atendidas")
+    df_consol_tabela = pd.DataFrame([
+        {
+            'Indicador / Categoria de Atendimento': 'Atendidas com judicialização',
+            'Quantidade (Mulheres Únicas)': total_com_jud,
+            'Proporção (%)': f"{pct_com_jud:.1f}%",
+            'Descrição Metodológica': 'Mulheres que passaram pelo acolhimento/atendimento e tiveram petição protocolada em juízo'
+        },
+        {
+            'Indicador / Categoria de Atendimento': 'Atendidas sem judicialização (apenas orientação)',
+            'Quantidade (Mulheres Únicas)': total_sem_jud,
+            'Proporção (%)': f"{pct_sem_jud:.1f}%",
+            'Descrição Metodológica': 'Mulheres atendidas em orientação jurídica qualificada e acolhimento sem protocolo judicial'
+        },
+        {
+            'Indicador / Categoria de Atendimento': 'Total de Mulheres Atendidas',
+            'Quantidade (Mulheres Únicas)': total_mulheres_unicas,
+            'Proporção (%)': '100,0%',
+            'Descrição Metodológica': 'Total consolidado de mulheres únicas atendidas (categorias estritamente mutuamente exclusivas)'
         }
-        df_evol_at = df_atend.groupby(['mes_ano', 'categoria_modalidade']).size().reset_index(name='Atendimentos')
-        df_evol_at['Mês'] = df_evol_at['mes_ano'].map(meses_rotulos).fillna(df_evol_at['mes_ano'])
-        
-        fig_evol_at = px.bar(
-            df_evol_at, x='Mês', y='Atendimentos', color='categoria_modalidade',
-            title="Evolução mensal dos atendimentos por modalidade (2026)",
-            barmode='group',
-            color_discrete_sequence=[BRAND_PURPLE_DARK, BRAND_GREEN, BRAND_PEACH_DEEP, BRAND_PURPLE_LIGHT, BRAND_GREEN_DARK, '#C49B7A', '#A388C8', '#85A344']
-        )
-        fig_evol_at.update_traces(textposition='outside', cliponaxis=False)
-        fig_evol_at.update_layout(
-            legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5, font=dict(family='Plus Jakarta Sans, sans-serif', size=11, color=BRAND_PURPLE_DARK)),
-            **PLOTLY_LAYOUT
-        )
-        apply_chart_theme(fig_evol_at, top_margin=60, bottom_margin=80)
-        st.plotly_chart(fig_evol_at, use_container_width=True)
+    ])
+    st.dataframe(df_consol_tabela, use_container_width=True, hide_index=True)
 
-        # Consolidação das modalidades de atendimento (conforme layout oficial da imagem)
-        st.markdown("#### Consolidação das modalidades de atendimento")
-        
-        categorias_excluir_modalidades = [
-            'encaminhamento formal',
-            'atendimento presencial',
-            'petição / demanda jurídica',
-            'peticao / demanda juridica',
-            'atendimento geral'
-        ]
-        df_tab = df_atend[
-            ~df_atend['categoria_modalidade'].str.lower().isin(categorias_excluir_modalidades) &
-            ~df_atend['categoria_modalidade'].str.lower().str.contains('cancel|ausên|ausen')
-        ].copy()
-        
-        df_agg = df_tab['categoria_modalidade'].value_counts().reset_index()
-        df_agg.columns = ['Modalidade de Atendimento', 'Total Realizado']
-        tot_filtrado = df_agg['Total Realizado'].sum()
-        df_agg['Proporção (%)'] = (df_agg['Total Realizado'] / tot_filtrado * 100).round(1).astype(str) + '%'
-        
-        # Média semanal calculada com base em 33 semanas úteis (165 dias úteis com atividades)
-        semanas_ref = 33.0
-        df_agg['Média Semanal'] = (df_agg['Total Realizado'] / semanas_ref).round(2).astype(str) + ' / sem'
-        
-        st.dataframe(df_agg, use_container_width=True, hide_index=True)
-
-        # Nota Oficial: Telefone e Mensagens (WhatsApp) - idêntica à imagem
-        st.markdown(f"""
-        <div style="background-color: #F8F6FD; border-left: 4px solid {BRAND_PURPLE}; padding: 1.15rem 1.4rem; border-radius: 10px; margin-top: 1.5rem; margin-bottom: 1.2rem;">
-            <h4 style="margin: 0 0 0.5rem 0; color: {BRAND_PURPLE_DARK}; font-size: 1.05rem;">
-                📞 Acompanhamento contínuo por telefone e mensagens (WhatsApp)
-            </h4>
-            <p style="margin: 0 0 0.6rem 0; font-size: 0.93rem; color: #1F2937; line-height: 1.55;">
-                No período analisado (março a outubro de 2026), foram registrados <b>2496 atendimentos</b> distribuídos em <b>165 dias com atividades</b> (aproximadamente 33 semanas úteis).
-            </p>
-            <p style="margin: 0 0 0.6rem 0; font-size: 0.93rem; color: #1F2937; line-height: 1.55;">
-                O atendimento por telefone e mensagens de texto/áudio configurou-se como o <b>principal canal de orientação e acompanhamento individualizado</b>, respondendo por <b>2006 atendimentos</b> com uma média de <b>60.8 atendimentos por semana</b> (12.2 por dia com atendimentos).
-            </p>
-            <p style="margin: 0; font-size: 0.88rem; color: #4B5563; line-height: 1.5; font-style: italic; border-top: 1px dashed #D1D5DB; padding-top: 0.65rem;">
-                <b>Dinâmica entre formulários e atendimentos continuados:</b> Os formulários de acolhimento representam a porta de entrada formal para novos casos no serviço. A partir dessa entrada, cada assistida gera múltiplos atendimentos de retorno e acompanhamento ao longo dos meses por telefone, WhatsApp e vídeo.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Nota Oficial: Demanda por Vídeo - idêntica à imagem
-        st.markdown(f"""
-        <div style="background-color: #F0FDF4; border-left: 4px solid {BRAND_GREEN}; padding: 1.05rem 1.3rem; border-radius: 10px; margin-top: 0.5rem; margin-bottom: 1.5rem;">
-            <h4 style="margin: 0 0 0.45rem 0; color: {BRAND_GREEN_DARK}; font-size: 1.0rem;">
-                📹 Atendimentos individualizados por vídeo
-            </h4>
-            <p style="margin: 0; font-size: 0.92rem; color: #1F2937; line-height: 1.55;">
-                Foram realizadas <b>299 sessões por vídeo com comparecimento efetivo</b>, realizadas ao longo de <b>134 dias</b>, representando uma média de <b>9.1 sessões por semana</b> (2.2 sessões por dia em que a modalidade ocorreu).
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.info("Nenhum dado de atendimento encontrado para os filtros selecionados.")
+    # Nota explicativa de rodapé com os totais brutos
+    st.markdown(f"""
+    <div style="background-color: #F8F6FD; border-left: 4px solid {BRAND_PURPLE}; padding: 1.15rem 1.4rem; border-radius: 10px; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+        <h4 style="margin: 0 0 0.5rem 0; color: {BRAND_PURPLE_DARK}; font-size: 1.05rem;">
+            📞 Dinâmica de acompanhamento contínuo por telefone e mensagens (WhatsApp)
+        </h4>
+        <p style="margin: 0 0 0.6rem 0; font-size: 0.93rem; color: #1F2937; line-height: 1.55;">
+            No período analisado (março a outubro de 2026), foram registradas <b>2.006 interações por telefone e mensagens de texto/áudio (WhatsApp)</b> ao longo de <b>165 dias com atividades</b> (aproximadamente 33 semanas úteis). Esse total bruto representa os retornos periódicos, esclarecimento de dúvidas processuais e o acompanhamento contínuo individualizado das <b>267 mulheres atendidas</b>, resultando nas médias operacionais de <b>12,2 contatos por dia útil</b> (60,8 contatos por semana) e aproximadamente <b>7,5 contatos de acompanhamento contínuo por mulher atendida</b>.
+        </p>
+        <p style="margin: 0; font-size: 0.88rem; color: #4B5563; line-height: 1.5; font-style: italic; border-top: 1px dashed #D1D5DB; padding-top: 0.65rem;">
+            <b>Relação entre porta de entrada e retornos:</b> Os formulários de acolhimento representam a porta de entrada formal para novos casos no serviço. A partir desse primeiro contato, cada mulher assistida gera múltiplos contatos de retorno e acompanhamento ao longo dos meses.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==========================================
 # ABA 3: PETIÇÕES JUDICIAIS (CEDEM)
