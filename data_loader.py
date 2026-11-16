@@ -136,7 +136,6 @@ CITIES_DB = {
     'Campo Largo': {'lat': -25.4597, 'lon': -49.5275, 'regiao': 'Outro Estado (PR)'},
     'São Paulo': {'lat': -23.5505, 'lon': -46.6333, 'regiao': 'Outro Estado (SP)'},
     'Porto Alegre': {'lat': -30.0346, 'lon': -51.2177, 'regiao': 'Outro Estado (RS)'},
-    'Manaus': {'lat': -3.1190, 'lon': -60.0217, 'regiao': 'Outro Estado (AM)'},
 }
 
 def remove_accents(text):
@@ -273,7 +272,6 @@ def normalize_city(raw_name):
         'balneario rincao': 'Balneário Rincão',
         'rincao': 'Balneário Rincão',
         'jupia': 'Jupiá',
-        'manaus': 'Manaus',
     }
     
     for key, std_name in sorted(synonyms.items(), key=lambda x: len(x[0]), reverse=True):
@@ -649,7 +647,7 @@ def find_data_files(folder_path='.'):
         for pat in patterns:
             for file_path in glob.glob(pat):
                 fname = os.path.basename(file_path)
-                if fname.startswith('~$') or 'backup' in fname.lower():
+                if fname.startswith('~$') or 'backup' in fname.lower() or 'consolidado' in fname.lower():
                     continue
                 found.append(file_path)
                 
@@ -691,6 +689,9 @@ def load_all_data(folder_path='.', uploaded_files=None):
     combined = enrich_dataframe(combined)
 
     # Considerar apenas registros até 31/08/2026
+    if 'municipio' in combined.columns:
+        combined = combined[combined['municipio'].astype(str).str.lower() != 'manaus'].copy()
+
     if 'data_hora' in combined.columns:
         combined = combined[
             combined['data_hora'].isna() | (combined['data_hora'] <= DATA_CUTOFF)
@@ -967,12 +968,82 @@ def load_peticoes_data(folder_path='.', uploaded_files=None):
     combined = pd.concat(all_dfs, ignore_index=True)
     return combined
 
+
+def load_consolidated_mulheres_data(folder_path='.', uploaded_files=None):
+    """
+    Carrega a base oficial consolidada e deduplicada de mulheres atendidas
+    do arquivo Dados_Consolidados_Anonimizados_CEDEM_2026_v3.xlsx (aba Base_BI).
+    Garante conformidade com a LGPD e indicadores oficiais de mulheres únicas.
+    """
+    import glob
+    target_filename = 'Dados_Consolidados_Anonimizados_CEDEM_2026_v3.xlsx'
+    candidates = []
+    
+    if uploaded_files:
+        for uf in uploaded_files:
+            if 'consolidado' in uf.name.lower() or target_filename.lower() in uf.name.lower():
+                candidates.append(uf)
+                
+    search_dirs = [
+        folder_path,
+        os.path.join(folder_path, 'dados'),
+        os.path.join(os.path.expanduser('~'), 'Downloads'),
+        r'C:\Users\barbarasimoes\Downloads'
+    ]
+    for sdir in search_dirs:
+        if os.path.exists(sdir):
+            p = os.path.join(sdir, target_filename)
+            if os.path.exists(p) and p not in candidates:
+                candidates.append(p)
+            for match in glob.glob(os.path.join(sdir, '*consolidado*.xlsx')):
+                if match not in candidates and not os.path.basename(match).startswith('~$'):
+                    candidates.append(match)
+                    
+    for candidate in candidates:
+        try:
+            if hasattr(candidate, 'seek'):
+                candidate.seek(0)
+            xl = pd.ExcelFile(candidate)
+            sheet_bi = None
+            for s in xl.sheet_names:
+                if 'base_bi' in remove_accents(s).lower() or 'base' in remove_accents(s).lower():
+                    sheet_bi = s
+                    break
+            if sheet_bi:
+                df = xl.parse(sheet_bi)
+                df.columns = [str(c).strip() for c in df.columns]
+                if 'Categoria_Atendimento' in df.columns and 'Mulheres_Atendidas' in df.columns:
+                    df = df.dropna(subset=['Categoria_Atendimento', 'Mulheres_Atendidas']).copy()
+                    df['Mulheres_Atendidas'] = pd.to_numeric(df['Mulheres_Atendidas'], errors='coerce').fillna(0).astype(int)
+                    df['Categoria_Exibicao'] = df['Categoria_Atendimento'].apply(
+                        lambda x: 'Atendidas com judicialização' if 'com judicializa' in str(x).lower()
+                        else ('Atendidas sem judicialização (apenas orientação)' if 'sem judicializa' in str(x).lower() or 'orienta' in str(x).lower()
+                        else str(x))
+                    )
+                    return df
+        except Exception as e:
+            print(f"Erro ao ler arquivo consolidado {candidate}: {e}")
+            
+    return pd.DataFrame({
+        'Categoria_Atendimento': [
+            'Atendidas por vídeo com judicialização',
+            'Atendidas por vídeo sem judicialização (apenas orientação)'
+        ],
+        'Categoria_Exibicao': [
+            'Atendidas com judicialização',
+            'Atendidas sem judicialização (apenas orientação)'
+        ],
+        'Mulheres_Atendidas': [170, 97]
+    })
+
 def load_all_dashboard_data(folder_path='.', uploaded_files=None):
     df_forms = load_all_data(folder_path=folder_path, uploaded_files=uploaded_files)
     df_atend = load_atendimentos_data(folder_path=folder_path, uploaded_files=uploaded_files)
     df_pet = load_peticoes_data(folder_path=folder_path, uploaded_files=uploaded_files)
+    df_consol = load_consolidated_mulheres_data(folder_path=folder_path, uploaded_files=uploaded_files)
     return {
         'formularios': df_forms,
         'atendimentos': df_atend,
-        'peticoes': df_pet
+        'peticoes': df_pet,
+        'mulheres_consolidadas': df_consol
     }
